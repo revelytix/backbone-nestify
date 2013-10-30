@@ -38,7 +38,7 @@ module.exports = function(grunt) {
         concat: {
             dist: {
                 src: ['backbone-nestify.js'],
-                dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.js'
+                dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js'
             }            
         },
         uglify: {
@@ -47,7 +47,7 @@ module.exports = function(grunt) {
             },
             dist: {
                 files: {
-                    'dist/<%= pkg.name %>.<%= pkg.version %>.min.js': ['backbone-nestify.js']
+                    'dist/<%= pkg.name %>-<%= pkg.version %>.min.js': ['backbone-nestify.js']
                 }
             }
         }
