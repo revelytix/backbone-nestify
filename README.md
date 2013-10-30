@@ -1,4 +1,4 @@
-# Backbone-Nestify
+# backbone-nestify
 
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Backbone Models and Collections.
 
@@ -27,4 +27,3 @@ var FooModel = Backbone.Model.extend(
 
     $ npm install
     $ grunt [dist]
-
