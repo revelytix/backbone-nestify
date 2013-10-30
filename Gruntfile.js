@@ -35,6 +35,12 @@ module.exports = function(grunt) {
                 src: ['test/**/*.js']
             }
         },
+        concat: {
+            dist: {
+                src: ['backbone-nestify.js'],
+                dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.js'
+            }            
+        },
         uglify: {
             options: {
                 banner: '/*! <%= pkg.name %> <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
@@ -49,8 +55,9 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-mocha-test');
+    grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
 
     grunt.registerTask('default', ['jshint', 'mochaTest']);
-    grunt.registerTask('dist', ['jshint', 'mochaTest', 'uglify']);
+    grunt.registerTask('dist', ['jshint', 'mochaTest', 'concat', 'uglify']);
 };
