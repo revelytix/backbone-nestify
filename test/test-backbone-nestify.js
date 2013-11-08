@@ -25,38 +25,26 @@
     var assert = chai.assert,
         env;
 
-    var dbgMixin = {
-        toString: function(){
-            return JSON.stringify(this, null, 2);
-        },
-        dbg: function(){
-            return JSON.stringify(this, null, 2);
-        }
-    };
-
     suite('Nestify');
 
     beforeEach( function(){
-        var BarModel = Backbone.Model.extend(dbgMixin); 
-        var BazCollection = Backbone.Collection.extend(_.extend({model:BarModel}, dbgMixin));
-        var FooModel = Backbone.Model.extend(_.extend({},
-                                                      nestify({
-                                                          "bar":{constructor:BarModel},
-                                                          "baz":{constructor:BazCollection}
-                                                      }), dbgMixin));
+        var BarModel = Backbone.Model;
+        var BazCollection = Backbone.Collection.extend({model:BarModel});
+        var FooModel = Backbone.Model.extend(nestify({
+            "bar":{constructor:BarModel},
+            "baz":{constructor:BazCollection}
+        }));
 
         // more complex nesting
-        var ColModel = Backbone.Model.extend(dbgMixin); 
-        var ColCollection = Backbone.Collection.extend(_.extend({model:ColModel}, dbgMixin));
-        var StructModel = Backbone.Model.extend(_.extend({},
-                                                         nestify({
-                                                             cols:{constructor:ColCollection}
-                                                         }), dbgMixin));
-        var StructCollection = Backbone.Collection.extend(_.extend({model:StructModel}, dbgMixin));
-        var DataModel = Backbone.Model.extend(_.extend({},
-                                                       nestify({
-                                                           structs:{constructor:StructCollection}
-                                                       }), dbgMixin));
+        var ColModel = Backbone.Model;
+        var ColCollection = Backbone.Collection.extend({model:ColModel});
+        var StructModel = Backbone.Model.extend(nestify({
+            cols:{constructor:ColCollection}
+        }));
+        var StructCollection = Backbone.Collection.extend({model:StructModel});
+        var DataModel = Backbone.Model.extend(nestify({
+            structs:{constructor:StructCollection}
+        }));
 
         // sample DataModel
         var cm0 = new ColModel({name:"CM0"});
@@ -85,10 +73,6 @@
         var f = new env.FooModel();
         f.set("foo", 3);
         assert.strictEqual(3, f.get("foo"), "simple set");
-    });
-
-    test('test test pollution', function(){
-        env = {};
     });
 
     test('nestedModelUndefinedAtFirst', function(){
