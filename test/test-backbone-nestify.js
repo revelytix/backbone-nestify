@@ -22,7 +22,8 @@
     }
 }(function(_, Backbone, chai, mocha, nestify) {
 
-    var assert = chai.assert;
+    var assert = chai.assert,
+        expect = chai.expect;
 
     describe('Nestify', function(){
 
@@ -90,17 +91,16 @@
             it("should work as normal", function(){
                 var f = new env.FooModel();
                 f.set("foo", 3);
-                assert.strictEqual(3, f.get("foo"), "simple set");
+                expect(f.get("foo")).to.equal(3);
             });
         });
 
         describe('single nested model', function(){
             it("should have undefined attributes, initially", function(){
                 var f = new env.FooModel();
-                assert.isUndefined(f.get("bar"));
-                assert.isUndefined(f.get("baz"));
+                expect(f.get("bar")).to.be.undefined;
+                expect(f.get("baz")).to.be.undefined;
             });
-
         });
 
         describe('nested model set', function(){
@@ -109,29 +109,29 @@
                 var b = new env.BarModel();
                 f.set("bar", b);
                 b.set("inky", "dinky");
-                assert.strictEqual(f.get(["bar", "inky"]), "dinky");
-                assert.strictEqual(f.get("bar|inky"), "dinky");
+                expect(f.get(["bar", "inky"])).to.equal("dinky");
+                expect(f.get("bar|inky")).to.equal("dinky");
             });
             it("should allow set using array syntax", function(){
                 var f = new env.FooModel();
                 var b = new env.BarModel();
                 f.set("bar", b);
                 f.set(["bar", "baz"], 4);
-                assert.strictEqual(b.get("baz"), 4);
+                expect(b.get("baz")).to.equal(4);
             });
             it("should allow set using stringified syntax", function(){
                 var f = new env.FooModel();
                 var b = new env.BarModel();
                 f.set("bar", b);
                 f.set("bar|baz", 4);
-                assert.strictEqual(b.get("baz"), 4);
+                expect(b.get("baz")).to.equal(4);
             });
             it("should allow set using JSON", function(){
                 var f = new env.FooModel();
                 var b = new env.BarModel();
                 f.set("bar", b);
                 f.set({bar: {baz: 4}});
-                assert.strictEqual(b.get("baz"), 4);
+                expect(b.get("baz")).to.equal(4);
             });
         });
 
@@ -142,8 +142,8 @@
         describe('nested model dynamic construction', function(){
             it("should be spec'd, then constructed with raw JSON", function(){
                 var f = new env.FooModel({bar: {none: 4}});
-                assert.strictEqual(f.get("bar|none"), 4);
-                assert.instanceOf(f.get("bar"), env.BarModel);
+                expect(f.get("bar|none")).to.equal(4);
+                expect(f.get("bar")).to.be.an.instanceof(env.BarModel);
             });
         });
 
@@ -153,10 +153,10 @@
         describe('nested collection dynamic construction', function(){
             it("should be spec'd, then constructed with raw JSON", function(){
                 var f = new env.FooModel({baz: [{none: 4}, {another:1}]});
-                assert.strictEqual(f.get("baz|0|none"), 4);
-                assert.strictEqual(f.get("baz|1|another"), 1);
-                assert.instanceOf(f.get("baz"), env.BazCollection);
-                assert.instanceOf(f.get("baz|0"), env.BarModel);
+                expect(f.get("baz|0|none")).to.equal(4);
+                expect(f.get("baz|1|another")).to.equal(1);
+                expect(f.get("baz")).to.be.an.instanceof(env.BazCollection);
+                expect(f.get("baz|0")).to.be.an.instanceof(env.BarModel);
             });
         });
 
@@ -171,9 +171,9 @@
                 c.add(b2);
                 b.set("spicy", "meatball");
                 b2.set("tangy", "tofu");
-                assert.strictEqual(f.get(["baz", 0, "spicy"]), "meatball");
-                assert.strictEqual(f.get("baz|0|spicy"), "meatball");
-                assert.strictEqual(f.get(["baz", 1, "tangy"]), "tofu");
+                expect(f.get(["baz", 0, "spicy"])).to.equal("meatball");
+                expect(f.get("baz|0|spicy")).to.equal("meatball");
+                expect(f.get(["baz", 1, "tangy"])).to.equal("tofu");
             });
 
             it("should support the set syntax options", function(){
@@ -185,9 +185,9 @@
                 c.add(b);
                 c.add(b2);
                 f.set(["baz", 0, "spicy"], "meatball");
-                assert.strictEqual(b.get("spicy"), "meatball");
+                expect(b.get("spicy")).to.equal("meatball");
                 f.set(["baz", 1, "greasy"], "granny");
-                assert.strictEqual(b2.get("greasy"), "granny");
+                expect(b2.get("greasy")).to.equal("granny");
             });
 
             it("should support stringified set", function(){
@@ -197,7 +197,7 @@
                 f.set("baz", c);
                 c.add(b);
                 f.set("baz|0|spicy", "meatball");
-                assert.strictEqual(b.get("spicy"), "meatball");
+                expect(b.get("spicy")).to.equal("meatball");
             });
         });
 
@@ -217,7 +217,7 @@
                 f2.set("baz2", c2);
                 c2.add(b);
                 b.set("monkey", "butter");
-                assert.strictEqual(f.get("baz|0|baz2|0|monkey"), "butter");
+                expect(f.get("baz|0|baz2|0|monkey")).to.equal("butter");
             });
 
             /**
@@ -229,7 +229,7 @@
                 var f = new env.FooModel();
                 var c = new env.BazCollection();
                 f.set("bar", c);
-                assert.instanceOf(f.get("bar"), env.BazCollection);
+                expect(f.get("bar")).to.be.an.instanceof(env.BazCollection);
             });
         });
 
@@ -247,7 +247,7 @@
                 b.on("change:quiet", assert.fail);
                 f.set({bar: {loud: 4}});
                 f.set({bar: {quiet: 8}}, {silent:true});
-                assert.isTrue(eventHeard);
+                expect(eventHeard).to.be.true;
             });
 
             /**
@@ -260,7 +260,7 @@
                 f.on("change", function(){eventCount = eventCount + 1;});
                 f.set("bar", new env.BarModel());
                 f.set({bar: {loud: 4}});
-                assert.strictEqual(eventCount, 1);
+                expect(eventCount).to.equal(1);
             });
 
             it("should set nested JSON silently", function(){
@@ -298,14 +298,14 @@
                 var c = new env.BazCollection(new env.BarModel({name:"Tim"}));
                 var f = new env.FooModel();
                 f.set("baz", c);
-                assert.strictEqual(f.get("baz|0|name"), "Tim");
+                expect(f.get("baz|0|name")).to.equal("Tim");
             });
 
             it("should work if pre-constructed using JSON", function(){
                 var c = new env.BazCollection(new env.BarModel({name:"Tim"}));
                 var f = new env.FooModel();
                 f.set({baz:c});
-                assert.strictEqual(f.get("baz|0|name"), "Tim");
+                expect(f.get("baz|0|name")).to.equal("Tim");
             });
 
             it("should work if modifed after nesting", function(){
@@ -313,7 +313,7 @@
                 var f = new env.FooModel();
                 f.set("baz", c);
                 c.add(new env.BarModel({name:"Tim"}));
-                assert.strictEqual(f.get("baz|0|name"), "Tim");
+                expect(f.get("baz|0|name")).to.equal("Tim");
             });
 
             it("should work if modified with JSON after nesting", function(){
@@ -321,13 +321,13 @@
                 var f = new env.FooModel();
                 f.set({baz:c});
                 c.add(new env.BarModel({name:"Tim"}));
-                assert.strictEqual(f.get("baz|0|name"), "Tim");
+                expect(f.get("baz|0|name")).to.equal("Tim");
             });
 
             it("should allow construction with JSON", function(){
                 var c = new env.BazCollection(new env.BarModel({name:"Tim"}));
                 var f = new env.FooModel({baz:c});
-                assert.strictEqual(f.get("baz|0|name"), "Tim");
+                expect(f.get("baz|0|name")).to.equal("Tim");
             });
         });
 
@@ -340,7 +340,7 @@
                 f.set("baz", c);
                 c.add(b);
                 f.set({baz:[{spicy:"meatball"}]});
-                assert.strictEqual(b.get("spicy"), "meatball");
+                expect(b.get("spicy")).to.equal("meatball");
             });
 
             it("should allow JSON set, followed by collection modification", function(){
@@ -349,8 +349,8 @@
                 f.set("baz", c);
                 c.add(new env.BarModel());
                 f.set({baz:[{spicy:"meatball"}]});
-                assert.strictEqual(f.get("baz|0|spicy"), "meatball");
-                assert.instanceOf(f.get("baz|0"), env.BarModel);
+                expect(f.get("baz|0|spicy")).to.equal("meatball");
+                expect(f.get("baz|0")).to.be.an.instanceof(env.BarModel);
             });
 
             it("should allow modifying the nested collection's model", function(){
@@ -359,14 +359,14 @@
                 c.add(new env.BarModel({name:"Tim"}));
                 var f = new env.FooModel();
                 f.set("baz", c);
-                assert.strictEqual(f.get("baz|0|name"), "Tim");
+                expect(f.get("baz|0|name")).to.equal("Tim");
 
                 // test
                 f.set({baz:[{spicy:"meatball"}]});
 
-                // asserts
-                assert.strictEqual(f.get("baz|0|spicy"), "meatball");
-                assert.instanceOf(f.get("baz|0"), env.BarModel);
+                // expectations
+                expect(f.get("baz|0|spicy")).to.equal("meatball");
+                expect(f.get("baz|0")).to.be.an.instanceof(env.BarModel);
             });
 
             it("should allow setting of nested collection's models' attributes", function(){
@@ -378,11 +378,11 @@
                 c.add(b0);
                 c.add(b1);
                 f.set("baz|0|spicy", "meatball");
-                assert.strictEqual(b0.get("spicy"), "meatball");
-                assert.isUndefined(b1.get("spicy"));
+                expect(b0.get("spicy")).to.equal("meatball");
+                expect(b1.get("spicy")).to.be.undefined;
                 f.set("baz|1|spicy", "canoli");
-                assert.strictEqual(b0.get("spicy"), "meatball");
-                assert.strictEqual(b1.get("spicy"), "canoli");
+                expect(b0.get("spicy")).to.equal("meatball");
+                expect(b1.get("spicy")).to.equal("canoli");
             });
         });
 
@@ -399,9 +399,9 @@
                     var f = new env.FooModel({baz:[{spicy:"meatball"},
                                                    {tangy:"salsa"}]
                                              });
-                    assert.strictEqual(f.get("baz").models.length, 2);
+                    expect(f.get("baz").models.length).to.equal(2);
                     f.set({baz:[{hot:"sausage"}]}, {coll:"reset"});
-                    assert.strictEqual(f.get("baz").models.length, 1);
+                    expect(f.get("baz").models.length).to.equal(1);
                 });
             });
 
@@ -417,9 +417,9 @@
                     var f = new env.FooModel({baz:[{spicy:"meatball"},
                                                    {tangy:"salsa"}]
                                              });
-                    assert.strictEqual(f.get("baz").models.length, 2);
+                    expect(f.get("baz").models.length).to.equal(2);
                     f.set({baz:[{hot:"sausage"}]}, {coll:"set", remove:false});
-                    assert.strictEqual(f.get("baz").models.length, 3);
+                    expect(f.get("baz").models.length).to.equal(3);
                 });
             });
 
@@ -433,9 +433,9 @@
                     var f = new env.FooModel({baz:[{spicy:"meatball"},
                                                    {tangy:"salsa"}]
                                              });
-                    assert.strictEqual(f.get("baz").models.length, 2);
+                    expect(f.get("baz").models.length).to.equal(2);
                     f.set({baz:[{hot:"sausage"}]}, {coll:"at"});
-                    assert.strictEqual(f.get("baz").models.length, 2);
+                    expect(f.get("baz").models.length).to.equal(2);
                 });
             });
         });
@@ -445,8 +445,8 @@
                 var f = new env.FooModel();
                 f.set("baz|2|spicy", "meatball");
                 var b = f.get("baz|2");
-                assert.instanceOf(b, env.BarModel);
-                assert.strictEqual(b.get("spicy"), "meatball");
+                expect(b).to.be.an.instanceof(env.BarModel);
+                expect(b.get("spicy")).to.equal("meatball");
             });
         });
 
@@ -461,25 +461,25 @@
             it('should nest primitives', function(){
                 var f = new env.FooModel();
                 f.set("something|spicy", "meatball");
-                assert.strictEqual(f.get("something|spicy"), "meatball");
+                expect(f.get("something|spicy")).to.equal("meatball");
             });
 
             it('should nest primitive into an array', function(){
                 var f = new env.FooModel();
                 f.set("something|2|spicy", "meatball");
-                assert.strictEqual(f.get("something|2|spicy"), "meatball");
+                expect(f.get("something|2|spicy")).to.equal("meatball");
             });
 
             it('should make array rather than Collection, obj rather than Model', function(){
                 var f = new env.FooModel();
                 f.set("something|2|spicy", "meatball");
-                assert.notInstanceOf(f.get("something"), Backbone.Collection);
-                assert.isArray(f.get("something"));
-                assert.notInstanceOf(f.get("something|2"), Backbone.Model);
-                assert.isNotArray(f.get("something|2"));
-                assert.isObject(f.get("something|2"));
-                assert.strictEqual(f.get("something|2|spicy"), "meatball");
-                assert.deepEqual(f.get("something"), [, , {spicy:"meatball"}]);
+                expect(f.get("something")).to.not.be.an.instanceof(Backbone.Collection);
+                expect(f.get("something")).to.be.instanceof(Array);
+                expect(f.get("something|2")).to.not.be.an.instanceof(Backbone.Model);
+                expect(f.get("something|2")).to.not.be.an.instanceof(Array);
+                expect(f.get("something|2")).to.be.an.instanceof(Object);
+                expect(f.get("something|2|spicy")).to.equal("meatball");
+                expect(f.get("something")).to.deep.equal([, , {spicy:"meatball"}]);
             });
 
             it('should fill array sparsely if necessary', function(){
@@ -487,9 +487,9 @@
                 f.set(["extension", 0], "snuh");
                 f.set(["extension", 2], "blammo");
                 var b = f.get("extension");
-                assert.isArray(b);
-                assert.strictEqual(b[0], "snuh");
-                assert.strictEqual(b[2], "blammo");
+                expect(b).to.be.an.instanceof(Array);
+                expect(b[0]).to.equal("snuh");
+                expect(b[2]).to.equal("blammo");
             });
 
             it('should set objects nested', function(){
@@ -497,9 +497,9 @@
                 f.set(["extension", "aak"], "snuh");
                 f.set(["extension", "oop"], "blammo");
                 var b = f.get("extension");
-                assert.isObject(b);
-                assert.strictEqual(b.aak, "snuh");
-                assert.strictEqual(b.oop, "blammo");
+                expect(b).to.be.an.instanceof(Object);
+                expect(b.aak).to.equal("snuh");
+                expect(b.oop).to.equal("blammo");
             });
 
             /**
@@ -510,9 +510,10 @@
                 var f = new env.FooModel();
                 f.set(["bar", "something"], 4);
                 var b = f.get("bar");
-                assert(b);
-                assert.strictEqual(b.get("something"), 4);
-                assert(b.constructor === env.BarModel, "nested model is of expected type");
+                expect(b).to.not.be.undefined;
+                expect(b.get("something")).to.equal(4);
+                expect(b).to.be.an.instanceof(env.BarModel);
+                expect(b.constructor).to.equal(env.BarModel);
             });
         });
 
@@ -522,42 +523,42 @@
         describe('pathToObject', function(){
             it('should convert JSON to nested path form', function(){
                 var expected = {foo: "bar"};
-                assert.deepEqual(nestify.pathToObject("foo", "bar"), expected);
+                expect(nestify.pathToObject("foo", "bar")).to.deep.equal(expected);
             });
 
             it('should convert JSON to nested path form', function(){
                 var expected = {foo: {bar: "Baz"}};
-                assert.deepEqual(nestify.pathToObject(expected), expected);
-                assert.deepEqual(nestify.pathToObject(["foo", "bar"], "Baz"), expected);
+                expect(nestify.pathToObject(expected)).to.deep.equal(expected);
+                expect(nestify.pathToObject(["foo", "bar"], "Baz")).to.deep.equal(expected);
             });
 
             it('should convert JSON with array to nested path form', function(){
                 var expected = {foo: [{baz: "Goo"}]};
-                assert.deepEqual(nestify.pathToObject(expected), expected);
-                assert.deepEqual(nestify.pathToObject(["foo", 0, "baz"], "Goo"), expected);
+                expect(nestify.pathToObject(expected)).to.deep.equal(expected);
+                expect(nestify.pathToObject(["foo", 0, "baz"], "Goo")).to.deep.equal(expected);
             });
 
             it('should convert JSON with array to nested path form', function(){
                 var expected = {foo: {bar: [, , {baz: "Goo"}]}};
-                assert.deepEqual(nestify.pathToObject(expected), expected);
-                assert.deepEqual(nestify.pathToObject(["foo", "bar", 2, "baz"], "Goo"), expected);
+                expect(nestify.pathToObject(expected)).to.deep.equal(expected);
+                expect(nestify.pathToObject(["foo", "bar", 2, "baz"], "Goo")).to.deep.equal(expected);
             });
 
             it('should convert JSON with null value to nested path form', function(){
                 var expected = {foo: {bar: null}};
-                assert.deepEqual(nestify.pathToObject(["foo", "bar"], null), expected);
+                expect(nestify.pathToObject(["foo", "bar"], null)).to.deep.equal(expected);
             });
 
             it('should convert JSON with undefined value to nested path form', function(){
                 var un_D_fined;
                 var expected = {foo: {bar: un_D_fined}};
-                assert.deepEqual(nestify.pathToObject(["foo", "bar"], un_D_fined), expected);
+                expect(nestify.pathToObject(["foo", "bar"], un_D_fined)).to.deep.equal(expected);
             });
 
             it('should convert JSON with undefined value to nested path form', function(){
                 var un_D_fined = void 0;
                 var expected = {foo: [{bar: un_D_fined}]};
-                assert.deepEqual(nestify.pathToObject(["foo", 0, "bar"], un_D_fined), expected);
+                expect(nestify.pathToObject(["foo", 0, "bar"], un_D_fined)).to.deep.equal(expected);
             });
         });
 
@@ -572,16 +573,16 @@
                 var sc = new env.StructCollection([sm]);
                 var d = new env.DataModel({structs:sc, name:"DM"});
 
-                assert.strictEqual(d.get("name"), "DM");
-                assert.strictEqual(d.get("structs|0|name"), "SM");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "CM0");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "CM1");
+                expect(d.get("name")).to.equal("DM");
+                expect(d.get("structs|0|name")).to.equal("SM");
+                expect(d.get("structs|0|cols|0|name")).to.equal("CM0");
+                expect(d.get("structs|0|cols|1|name")).to.equal("CM1");
                 d.set("structs|0|cols|0|name", "meatball");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "meatball");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "CM1");
+                expect(d.get("structs|0|cols|0|name")).to.equal("meatball");
+                expect(d.get("structs|0|cols|1|name")).to.equal("CM1");
                 d.set("structs|0|cols|1|name", "canoli");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "meatball");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "canoli");
+                expect(d.get("structs|0|cols|0|name")).to.equal("meatball");
+                expect(d.get("structs|0|cols|1|name")).to.equal("canoli");
             });
 
             it('should nest properly via setter construction', function(){
@@ -600,17 +601,17 @@
                 sc.add(sm);
                 d.set("structs", sc);
 
-                // asserts
-                assert.strictEqual(d.get("name"), "DM");
-                assert.strictEqual(d.get("structs|0|name"), "SM");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "CM0");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "CM1");
+                // expectations
+                expect(d.get("name")).to.equal("DM");
+                expect(d.get("structs|0|name")).to.equal("SM");
+                expect(d.get("structs|0|cols|0|name")).to.equal("CM0");
+                expect(d.get("structs|0|cols|1|name")).to.equal("CM1");
                 d.set("structs|0|cols|0|name", "meatball");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "meatball");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "CM1");
+                expect(d.get("structs|0|cols|0|name")).to.equal("meatball");
+                expect(d.get("structs|0|cols|1|name")).to.equal("CM1");
                 d.set("structs|0|cols|1|name", "canoli");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "meatball");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "canoli");
+                expect(d.get("structs|0|cols|0|name")).to.equal("meatball");
+                expect(d.get("structs|0|cols|1|name")).to.equal("canoli");
             });
 
             it('should nest properly via setter construction, alternate ordering', function(){
@@ -629,17 +630,17 @@
                 cc.add(cm0);
                 cc.add(cm1);
 
-                // asserts
-                assert.strictEqual(d.get("name"), "DM");
-                assert.strictEqual(d.get("structs|0|name"), "SM");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "CM0");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "CM1");
+                // expectations
+                expect(d.get("name")).to.equal("DM");
+                expect(d.get("structs|0|name")).to.equal("SM");
+                expect(d.get("structs|0|cols|0|name")).to.equal("CM0");
+                expect(d.get("structs|0|cols|1|name")).to.equal("CM1");
                 d.set("structs|0|cols|0|name", "meatball");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "meatball");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "CM1");
+                expect(d.get("structs|0|cols|0|name")).to.equal("meatball");
+                expect(d.get("structs|0|cols|1|name")).to.equal("CM1");
                 d.set("structs|0|cols|1|name", "canoli");
-                assert.strictEqual(d.get("structs|0|cols|0|name"), "meatball");
-                assert.strictEqual(d.get("structs|0|cols|1|name"), "canoli");
+                expect(d.get("structs|0|cols|0|name")).to.equal("meatball");
+                expect(d.get("structs|0|cols|1|name")).to.equal("canoli");
             });
         });
 
@@ -650,13 +651,13 @@
         describe('attribute named "attribute"', function(){
             it('should not break', function(){
                 var b = new env.FooModel({foo:{attributes:{msg:"haha"}}});
-                assert.strictEqual(b.get("foo|attributes|msg"), "haha");
+                expect(b.get("foo|attributes|msg")).to.equal("haha");
             });
 
             it('should not break; distinct models', function(){
                 var b = new env.BarModel({attributes: {msg: "haha"}});
                 var f = new env.FooModel({bar:b});
-                assert.strictEqual(f.get("bar|attributes|msg"), "haha");
+                expect(f.get("bar|attributes|msg")).to.equal("haha");
             });
         });
 
@@ -665,7 +666,7 @@
                 var m = new env.FooModel();
                 var m2 = new env.FooModel({bar: {msg: "haha"}});
                 m.set(m2);
-                assert.deepEqual(m.toJSON(), m2.toJSON());
+                expect(m.toJSON()).to.deep.equal(m2.toJSON());
             });
         });
 
@@ -680,10 +681,10 @@
                 f.set("bar|nope", false);
                 f.set("bar|aNull", null);
                 f.set("bar|aUndef", env.unDFynd);
-                assert.isTrue(b.get("truDat"));
-                assert.isFalse(b.get("nope"));
-                assert.isNull(b.get("aNull"));
-                assert.isUndefined(b.get("aUndef"));
+                expect(b.get("truDat")).to.be.true;
+                expect(b.get("nope")).to.be.false;
+                expect(b.get("aNull")).to.be.null;
+                expect(b.get("aUndef")).to.be.undefined;
             });
         });
 
@@ -697,8 +698,8 @@
                 var f = new env.FooModel({bar:b});
                 f.set("bar|truDat", true);
                 f.set("bar|nope", false);
-                assert.isTrue(b.get("truDat"));
-                assert.isFalse(b.get("nope"));
+                expect(b.get("truDat")).to.be.true;
+                expect(b.get("nope")).to.be.false;
             });
             /*TODO?
             it("should not make change given values that are not existy.", function(){
@@ -707,8 +708,8 @@
                 var f = new env.FooModel({bar:b});
                 f.set("bar|truDat", null);
                 f.set("bar|nope", env.unDFynd);
-                assert.isFalse(b.get("truDat"));
-                assert.isTrue(b.get("nope"));
+                expect(b.get("truDat")).to.be.false;
+                expect(b.get("nope")).to.be.true;
             });
              */
         });
@@ -717,16 +718,16 @@
 
             it('should unset in a nested model', function(){
                 var f = new env.FooModel({bar: {none: 4}});
-                assert.strictEqual(f.get("bar|none"), 4);
+                expect(f.get("bar|none")).to.equal(4);
                 f.unset("bar|none");
-                assert.isUndefined(f.get("bar|none"));
+                expect(f.get("bar|none")).to.be.undefined;
             });
 
             it('should unset a non-nested attribute', function(){
                 var f = new env.FooModel({blargh: 4});
-                assert.strictEqual(f.get("blargh"), 4);
+                expect(f.get("blargh")).to.equal(4);
                 f.unset("blargh");
-                assert.isUndefined(f.get("blargh"));
+                expect(f.get("blargh")).to.be.undefined;
             });
 
             it('should unset silently', function(){
@@ -746,9 +747,9 @@
                 f.set("baz", c);
                 c.add(b);
                 f.set("baz|0|spicy", "meatball");
-                assert.strictEqual(b.get("spicy"), "meatball");
+                expect(b.get("spicy")).to.equal("meatball");
                 f.unset("baz|0|spicy");
-                assert.isUndefined(b.get("spicy"));
+                expect(b.get("spicy")).to.be.undefined;
             });
 
             it('should unset a Collection', function(){
@@ -758,9 +759,9 @@
                 f.set("baz", c);
                 c.add(b);
                 f.set("baz|0|spicy", "meatball");
-                assert.strictEqual(b.get("spicy"), "meatball");
+                expect(b.get("spicy")).to.equal("meatball");
                 f.unset("baz");
-                assert.isUndefined(f.get("baz"));
+                expect(f.get("baz")).to.be.undefined;
             });
         });
 
@@ -772,12 +773,11 @@
                 f.set("baz", c);
                 c.add(b);
                 f.set("baz|0|spicy", "meatball");
-                assert.strictEqual(b.get("spicy"), "meatball");
+                expect(b.get("spicy")).to.equal("meatball");
                 f.clear();
                 assert(_.isEmpty(f.attributes));
+                expect(f.attributes).to.be.empty;
             });
         });
-
     });
-
 }));
