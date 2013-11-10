@@ -4,26 +4,26 @@ Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Ba
 
 It provides two features:
 
-1. Specify the mapping between [Model](http://backbonejs.org/#Model) attributes names and the nested Model (or [Collection](http://backbonejs.org/#Collection)) constructors, in order to dynamically deserialize nested JSON into the proper tree of nested Model/Collection instances.
+* Specify the mapping between [Model](http://backbonejs.org/#Model) attributes names and the nested Model (or [Collection](http://backbonejs.org/#Collection)) constructors, in order to dynamically deserialize nested JSON into the proper tree of nested Model/Collection instances.
 
-        ```javascript
-        var ShoppingCart = Backbone.Model.extend(
-            _.extend({
-                /* Model definition... */
-            }, nestify({
-                "account":{constructor:Account},
-                "pending":{constructor:Order}
-            }))
-        );
-        ```
+```javascript
+var ShoppingCart = Backbone.Model.extend(
+    _.extend({
+        /* Model definition... */
+    }, nestify({
+        "account":{constructor:Account},
+        "pending":{constructor:Order}
+    }))
+);
+```
 
-1. Syntactic sugar is provided to easily get and set these nested Models and Collections.
+* Syntactic sugar is provided to easily get and set these nested Models and Collections.
 
-        ```javascript
-        var item3 = cart.get(["account", "orders", 0, "items", 3]); // an Item Model instance
+```javascript
+var item3 = cart.get(["account", "orders", 0, "items", 3]); // an Item Model instance
 
-        cart.set("account|orders|0|items|3|id", 50]); // Third Item now has an id of 50
-        ```
+cart.set("account|orders|0|items|3|id", 50]); // Third Item now has an id of 50
+```
 
 ## Usage
 
