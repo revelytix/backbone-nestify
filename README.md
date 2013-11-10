@@ -17,7 +17,7 @@ var ShoppingCart = Backbone.Model.extend(
 );
 ```
 
-1. Syntactic sugar is provided to easily get and set these nested Models and Collections.
+2. Syntactic sugar is provided to easily get and set these nested Models and Collections.
 
 ```javascript
 var item3 = cart.get(["account", "orders", 0, "items", 3]); // an Item Model instance
