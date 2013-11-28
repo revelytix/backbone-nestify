@@ -15,22 +15,24 @@ module.exports = function(grunt) {
                 undef: true,
                 boss: true,
                 eqnull: true,
+                expr: true,
 
                 globals: {
                     console: true,
                     module: true,
                     require: true,
                     define: true,
-                    suite: true,
                     beforeEach: true,
-                    test: true
+                    test: true,
+                    describe: true,
+                    it: true
                 }
             }
         },
         mochaTest: {
             test: {
                 options: {
-                    ui: 'qunit'
+                    ui: 'bdd'
                 },
                 src: ['test/**/*.js']
             }
