@@ -765,5 +765,79 @@
                 expect(order.attributes).to.be.empty;
             });
         });
+
+        describe('spec API', function(){
+
+            describe('Model/Collection constructors', function(){
+
+                it('should contain only get and set keys', function(){
+                    var spec = nestify({
+                        'orders':{constructor:env.Orders}
+                    });
+                    
+                    expect(_.keys(spec)).to.deep.equal(["get","set"]);
+                });
+                
+                it('should allow nil config', function(){
+                    var spec = nestify();
+                    
+                    expect(_.keys(spec)).to.deep.equal(["get","set"]);
+                });
+
+                it('can be mixed into individual Model instance', function(){
+                    var spec = nestify({
+                        'orders':{constructor:env.Orders}
+                    });
+
+                    var m1 = new Backbone.Model(),
+                        m2 = new Backbone.Model(),
+                        input = {
+                            orders: [
+                                {id:1},
+                                {id:2}
+                            ]
+                        };
+                    _.extend(m2, spec);
+                    m1.set(input);
+                    m2.set(input);
+                            
+                    expect(m1.get('orders')).to.be.an.instanceof(Array);
+                    expect(m2.get('orders')).to.be.an.instanceof(env.Orders);
+                 });
+
+                it('properly nests complex JSON into proper Models and Collections', function(){
+
+                    var shoppingCartJSON = 
+                            {pending: 
+                             {orderID:null,
+                              items:[{itemID:"bk28",
+                                      qty:25,
+                                      desc:"AA batteries"}]},
+                             account: 
+                             {acctID:55,
+                              uname:"bmiob",
+                              orders:[
+                                  {orderID:1,
+                                   items:[{itemID:"cc01",
+                                           qty:2,
+                                           desc:"meatball"},
+                                          {itemID:"cc25",
+                                           qty:87,
+                                           desc:"rhubarb"}]},
+                                  {orderID:2,
+                                   items:[{itemID:"sd23",
+                                           desc:"SICP"}]}
+                              ]}
+                            };
+
+                    var shoppingCart = new env.ShoppingCart(shoppingCartJSON);
+
+                    var anItem = shoppingCart.get("account|orders|1|items|0");
+                    expect(anItem).to.be.an.instanceof(env.Item);
+                    expect(anItem.get("itemID")).to.equal("sd23");
+                    expect(shoppingCart.get(["pending","items",0,"itemID"])).to.equal("bk28");
+                });
+            });
+        });
     });
 }));
