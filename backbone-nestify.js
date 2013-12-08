@@ -41,7 +41,7 @@
      */
     var _defaultOpts = {
         coll: "at", // possible values are "reset", "set", "at"
-        delim: "|"
+        delim: "|" // default delimiter is a pipe character
     };
 
     /**
@@ -90,7 +90,7 @@
     };
 
     /**
-     * If the property key is a pipe-delimited string such as
+     * If the property key is a delimited string such as
      * <code>'foo|bar|0|baz'</code>
      * then return an array of Strings, converting any String
      * numbers into proper Integers:
@@ -363,15 +363,16 @@
              *
              * m.get(["foo/Attr", "nestedFoo/Attr", 1, "nestedBaz/Attr"]);
              *
-             * or alternate pipe-delimited String syntax:
+             * or alternate delimited String syntax:
              *
              * m.get("foo/Attr|nestedFoo/Attr|1|nestedBaz/Attr");
              * 
              * Strings point to nested Models, integers point to nested
              * Collections.
              */
-            get: function(keys){
-                keys = _delimitedStringToArray(keys, _opts);
+            get: function(keys, opts){
+                opts = _.extend({}, _opts, opts);
+                keys = _delimitedStringToArray(keys, opts);
                 if (_.isArray(keys)){
                     return _lookup_path(keys, this);
                 } else {
@@ -385,7 +386,7 @@
              *
              * m.set(["foo/Attr", "nestedFoo/Attr", 2, "keyToSet"], "valueToSet);
              * 
-             * or alternate pipe-delimited String syntax:
+             * or alternate delimited String syntax:
              *
              * m.set("foo/Attr|nestedFoo/Attr|2|keyToSet", "valueToSet);
              *
@@ -393,25 +394,22 @@
              * Collections.
              */
             set: function(keys, value, opts){
-                keys = _delimitedStringToArray(keys, _opts);
-                var attrs;
 
-                if (_.isArray(keys)){
-                    attrs = _toObj(keys, value);
-                } else if (_.isObject(keys)) {
+                var attrs;
+                if (!_.isArray(keys) && _.isObject(keys)) {
+                    opts = _.extend({}, _opts, value);
                     attrs = keys instanceof Backbone.Model ? keys.attributes : keys;
-                    opts = value;
                 } else {
+                    opts = _.extend({}, _opts, opts);
+                    keys = _delimitedStringToArray(keys, opts);
                     attrs = _toObj(keys, value);
                 }
-                opts = _.extend({}, _opts, opts);
 
                 /**
                  * Skip the case of a simple key/value pair being
                  * passed in, or the case that value is already a Backbone.Model
                  */
                 if (_.isObject(attrs) && !(opts instanceof Backbone.Model)){
-                    opts = _.extend({}, _defaultOpts, opts);
                     attrs = _prepAtts.call(this, attrs, opts);
                 }
 

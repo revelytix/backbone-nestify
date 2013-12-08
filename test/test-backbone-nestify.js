@@ -199,6 +199,18 @@
                 cart.set("account.email", "nuge@geocities.com");
                 expect(cart.get("account.email")).to.equal("nuge@geocities.com");
             });
+            it("can be changed at get/set time", function(){
+                var cart = new env.ShoppingCart({
+                    account: {email: "nuge@hotmail.com"}
+                });
+                expect(cart.get("account.email", {delim:"."})).to.equal("nuge@hotmail.com");
+                cart.set("account,email", "nuge@geocities.com", {delim:","});
+                expect(cart.get("account|email")).to.equal("nuge@geocities.com");
+                cart.set("account,email", "nuge@geocities.com", {delim:","});
+                expect(cart.get("account|email")).to.equal("nuge@geocities.com");
+                cart.set({"account?email": "nuge@geocities.com"}, {delim:"?"});
+                expect(cart.get("account email", {delim:" "})).to.equal("nuge@geocities.com");
+            });
         });
 
 
