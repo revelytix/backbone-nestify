@@ -392,6 +392,21 @@
                     acct.set({orders:[{hot:"sausage"}]}, {coll:"reset"});
                     expect(acct.get("orders").models.length).to.equal(1);
                 });
+
+                it("can instead be set as a module option", function(){
+                    var Account = Backbone.Model.extend(nestify({
+                        orders: {constructor:env.Orders}
+                    }, {
+                        coll:"reset"
+                    }));
+
+                    var acct = new Account({orders:[{spicy:"meatball"},
+                                                    {tangy:"salsa"}]
+                                           });
+                    expect(acct.get("orders").models.length).to.equal(2);
+                    acct.set({orders:[{hot:"sausage"}]});
+                    expect(acct.get("orders").models.length).to.equal(1);
+                });
             });
 
             describe('setting with the "set" option', function(){
@@ -411,6 +426,21 @@
                     expect(acct.get("orders").models.length).to.equal(3);
 
                 });
+
+                it("can instead be set as a module option", function(){
+                    var Account = Backbone.Model.extend(nestify({
+                        orders: {constructor:env.Orders}
+                    }, {
+                        coll:"set"
+                    }));
+
+                    var acct = new Account({orders:[{spicy:"meatball"},
+                                                    {tangy:"salsa"}]
+                                           });
+                    expect(acct.get("orders").models.length).to.equal(2);
+                    acct.set({orders:[{hot:"sausage"}]}, {remove:false});
+                    expect(acct.get("orders").models.length).to.equal(3);
+                });
             });
 
             /**
@@ -425,6 +455,21 @@
                                                });
                     expect(acct.get("orders").models.length).to.equal(2);
                     acct.set({orders:[{hot:"sausage"}]}, {coll:"at"});
+                    expect(acct.get("orders").models.length).to.equal(2);
+                });
+
+                it("can instead be set as a module option", function(){
+                    var Account = Backbone.Model.extend(nestify({
+                        orders: {constructor:env.Orders}
+                    }, {
+                        coll:"at"
+                    }));
+
+                    var acct = new Account({orders:[{spicy:"meatball"},
+                                                    {tangy:"salsa"}]
+                                           });
+                    expect(acct.get("orders").models.length).to.equal(2);
+                    acct.set({orders:[{hot:"sausage"}]});
                     expect(acct.get("orders").models.length).to.equal(2);
                 });
             });

@@ -320,6 +320,8 @@
      * which will create a new instance of a nested model for
      * storing that attribute.
      *
+     * @param opts options
+     *
      * Example usage - no specs
      * 
      * <code><pre> 
@@ -346,7 +348,9 @@
      * </pre></code>
      *
      */
-    var mixinFn = function(specs){
+    var mixinFn = function(specs, opts){
+
+        var _opts = _.extend({}, _defaultOpts, opts);
 
         var attrNamesToModelConstructors = specs || {};
 
@@ -400,6 +404,7 @@
                 } else {
                     attrs = _toObj(keys, value);
                 }
+                opts = _.extend({}, _opts, opts);
 
                 /**
                  * Skip the case of a simple key/value pair being
