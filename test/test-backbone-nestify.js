@@ -183,6 +183,25 @@
             });
         });
 
+        describe('configurable delimiter', function(){
+            it("can be changed at specification time", function(){
+                var ShoppingCart = Backbone.Model.extend(nestify({
+                    pending: {constructor: env.Order},
+                    account: {constructor: env.Account}
+                },{
+                    delim:"." //period
+                }));
+
+                var cart = new ShoppingCart({
+                    account: {email: "nuge@hotmail.com"}
+                });
+                expect(cart.get("account.email")).to.equal("nuge@hotmail.com");
+                cart.set("account.email", "nuge@geocities.com");
+                expect(cart.get("account.email")).to.equal("nuge@geocities.com");
+            });
+        });
+
+
         /**
          * Note that setting things up front overrides any
          * constructors that may be declared for a nested property.
@@ -374,7 +393,6 @@
                 expect(order1.get("spicy")).to.equal("canoli");
             });
         });
-
 
         describe('fine-grained control of nested collection modification by using custom options', function(){
 

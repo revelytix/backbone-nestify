@@ -40,7 +40,8 @@
      * nested collections.
      */
     var _defaultOpts = {
-        coll: "at" // possible values are "reset", "set", "at"
+        coll: "at", // possible values are "reset", "set", "at"
+        delim: "|"
     };
 
     /**
@@ -95,8 +96,9 @@
      * numbers into proper Integers:
      * <code>['foo', 'bar', 0, 'baz']
      */
-    var _delimitedStringToArray = function(key){
-        return (_.isString(key) && /\|/.exec(key)) ? _withProperNums(key.split("|")) : key;
+    var _delimitedStringToArray = function(key, opts){
+        var _delim = opts.delim;
+        return (_.isString(key) && key.indexOf(_delim) > -1) ? _withProperNums(key.split(_delim)) : key;
     };
 
     /**
@@ -350,11 +352,9 @@
      */
     var mixinFn = function(specs, opts){
 
-        var _opts = _.extend({}, _defaultOpts, opts);
-
-        var attrNamesToModelConstructors = specs || {};
-
-        var prepAtts = _.partial(_prepAttributes, attrNamesToModelConstructors);
+        var _opts = _.extend({}, _defaultOpts, opts),
+            _attrNamesToModelConstructors = specs || {},
+            _prepAtts = _.partial(_prepAttributes, _attrNamesToModelConstructors);
 
         return {
             /**
@@ -371,7 +371,7 @@
              * Collections.
              */
             get: function(keys){
-                keys = _delimitedStringToArray(keys);
+                keys = _delimitedStringToArray(keys, _opts);
                 if (_.isArray(keys)){
                     return _lookup_path(keys, this);
                 } else {
@@ -393,7 +393,7 @@
              * Collections.
              */
             set: function(keys, value, opts){
-                keys = _delimitedStringToArray(keys);
+                keys = _delimitedStringToArray(keys, _opts);
                 var attrs;
 
                 if (_.isArray(keys)){
@@ -412,7 +412,7 @@
                  */
                 if (_.isObject(attrs) && !(opts instanceof Backbone.Model)){
                     opts = _.extend({}, _defaultOpts, opts);
-                    attrs = prepAtts.call(this, attrs, opts);
+                    attrs = _prepAtts.call(this, attrs, opts);
                 }
 
                 return Backbone.Model.prototype.set.call(this, attrs, opts);
