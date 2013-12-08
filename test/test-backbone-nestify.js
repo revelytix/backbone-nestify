@@ -213,7 +213,6 @@
             });
         });
 
-
         /**
          * Note that setting things up front overrides any
          * constructors that may be declared for a nested property.
@@ -251,7 +250,7 @@
         });
 
         /**
-         * Test that options are supported. 
+         * Test that standard Backbone options are supported. 
          */
         describe('set with options', function(){
 
@@ -554,6 +553,7 @@
                 var b = order.get("something");
                 expect(b).to.be.an.instanceof(Array);
                 expect(b[0]).to.equal("snuh");
+                expect(b[1]).to.be.undefined;
                 expect(b[2]).to.equal("blammo");
             });
 
@@ -843,42 +843,55 @@
 
         describe('spec API', function(){
 
-            describe('Model/Collection constructors', function(){
-
-                it('should contain only get and set keys', function(){
-                    var spec = nestify({
-                        'orders':{constructor:env.Orders}
-                    });
-                    
-                    expect(_.keys(spec)).to.deep.equal(["get","set"]);
+            it('should contain only get and set keys', function(){
+                var spec = nestify({
+                    'orders':{constructor:env.Orders}
                 });
                 
-                it('should allow nil config', function(){
-                    var spec = nestify();
-                    
-                    expect(_.keys(spec)).to.deep.equal(["get","set"]);
+                expect(_.keys(spec)).to.deep.equal(["get","set"]);
+            });
+            
+            it('should allow nil config', function(){
+                var spec = nestify();
+                
+                expect(_.keys(spec)).to.deep.equal(["get","set"]);
+            });
+
+            it('can be mixed into individual Model instance', function(){
+                var spec = nestify({
+                    'orders':{constructor:env.Orders}
                 });
 
-                it('can be mixed into individual Model instance', function(){
-                    var spec = nestify({
-                        'orders':{constructor:env.Orders}
-                    });
+                var m1 = new Backbone.Model(),
+                    m2 = new Backbone.Model(),
+                    input = {
+                        orders: [
+                            {id:1},
+                            {id:2}
+                        ]
+                    };
+                _.extend(m2, spec);
+                m1.set(input);
+                m2.set(input);
+                
+                expect(m1.get('orders')).to.be.an.instanceof(Array);
+                expect(m2.get('orders')).to.be.an.instanceof(env.Orders);
+            });
 
-                    var m1 = new Backbone.Model(),
-                        m2 = new Backbone.Model(),
-                        input = {
-                            orders: [
-                                {id:1},
-                                {id:2}
-                            ]
-                        };
-                    _.extend(m2, spec);
-                    m1.set(input);
-                    m2.set(input);
-                            
-                    expect(m1.get('orders')).to.be.an.instanceof(Array);
-                    expect(m2.get('orders')).to.be.an.instanceof(env.Orders);
-                 });
+
+            describe('Model/Collection constructor spec', function(){
+                it('can contain additional args', function(){
+                    var spec = nestify({
+                        'order':{constructor:env.Order,
+                                 args: {backordered:"2113-11-29"}}
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({order:{id:2112}});
+                    expect(model.get("order|backordered")).to.equal("2113-11-29");
+                });
+            });
+
+            describe('example usage', function(){
 
                 it('properly nests complex JSON into proper Models and Collections', function(){
 

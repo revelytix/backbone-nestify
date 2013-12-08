@@ -229,7 +229,7 @@
      * produce an equivalent object with existing nested backbone
      * models or other objects in the right places.
      * @param this a Backbone.Model having this mixin
-     * @param attrNamesToModelConstructors hash of String model
+     * @param spec currently, a hash of String model
      * attribute names, mapped to the constructor which must be
      * used to instantiate a new nested Backbone model for that
      * attribute. (see Example Usage doc)
@@ -237,9 +237,9 @@
      * transformed and made ready to be set on the model
      * @param options (optional) options to the 'set' method
      * @return prepared 'set attributes' ready to be set on the
-     * Backbone model with
+     * Backbone model
      */ 
-    var _prepAttributes  = function(attrNamesToModelConstructors, setAttributes, options){
+    var _prepAttributes  = function(spec, setAttributes, options){
 
         options = options || {};
 
@@ -258,7 +258,7 @@
                 // skip to end
             } else {
                 var existing = (this.attributes && this.attributes[k]);
-                var ctx = attrNamesToModelConstructors[k];
+                var ctx = spec[k];
 
                 if (ctx){
                     // Nested Backbone Model or Constructor case.
@@ -316,15 +316,15 @@
      * Return the module: a function which must be invoked to
      * produce the mixin.
      *
-     * @param specs specifications - a hash of String attribute name
-     * to object containing a nested model
+     * @param spec specification - a hash of String attribute name
+     * to object containing a nested model constructor
      * constructor function and optional args
      * which will create a new instance of a nested model for
      * storing that attribute.
      *
      * @param opts options
      *
-     * Example usage - no specs
+     * Example usage - no spec
      * 
      * <code><pre> 
      * nestify();
@@ -339,7 +339,7 @@
      *   });
      * </pre></code>
      *
-     * Example usage - with additional specs to nexted model constructor:
+     * Example usage - with additional args to nested model constructor:
      * 
      * <code><pre> 
      * nestify(
@@ -350,11 +350,11 @@
      * </pre></code>
      *
      */
-    var mixinFn = function(specs, opts){
+    var mixinFn = function(spec, opts){
 
         var _opts = _.extend({}, _defaultOpts, opts),
-            _attrNamesToModelConstructors = specs || {},
-            _prepAtts = _.partial(_prepAttributes, _attrNamesToModelConstructors);
+            _spec = spec || {},
+            _prepAtts = _.partial(_prepAttributes, _spec);
 
         return {
             /**
@@ -423,6 +423,3 @@
 
     return mixinFn;
 }));
-
-
-
