@@ -260,7 +260,14 @@
                     factory = spec.fn;
                 } else {
                     spec = _.isFunction(spec) ? {constructor:spec} : spec;
-                    factory = _.partial(this.specked, spec);
+                    // Thunkify creation of new value; it may not be needed
+                    factory = _.partial(this.specked, function(){
+                        var result = new spec.constructor(spec.args);
+                        if (spec.spec){
+                            _.extend(result, mixinFn(spec.spec));
+                        }
+                        return result;
+                    });
                 }
             } else {
                 factory = this.notSpecked;
@@ -271,10 +278,11 @@
         /**
          * Nested Backbone Model or Constructor case.
          */
-        specked: function(spec, v, existing, options){
+        specked: function(thunk, v, existing, options){
             // Either reuse the nested thingy, if
-            // present, or create a new nested instance
-            var thingy = existing || new spec.constructor(spec.args);
+            // present, or realize the new nested instance from 
+            // the thunk.
+            var thingy = existing || thunk();
 
             // TODO Backbone.Collection has a 'set' method in
             // Backbone 1.0.0; just use 'reset' for now.

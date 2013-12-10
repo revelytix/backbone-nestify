@@ -916,6 +916,17 @@
                     expect(o.get("id")).to.equal(2112);
                 });
 
+                it('can contain a spec for a constructor', function(){
+                    var spec = nestify({
+                        'order':{constructor:Backbone.Model,
+                                 spec: {item:env.Item}
+                                }
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({order:{item: {id: 2112}}});
+                    expect(model.get('order|item')).to.be.an.instanceof(env.Item);
+                    expect(model.get("order|item|id")).to.equal(2112);
+                });
             });
 
             describe('example usage', function(){
