@@ -165,63 +165,68 @@
     };
 
     /**
-     * Create new Models from the indicated Collection Model, and
-     * 'reset' them on the Collection
-     * @param coll Backbone.Collection which is to be reset with
-     * new models
-     * @param atts raw JSON which is to be used to instantiate new
-     * Models to 'reset' to the Collection
-     * @param opts (optional) options to the Model constructor and
-     * Collection 'reset' method.
+     * Group nested Collection-related functions together.
      */
-    var _resetColl = function(coll, atts, opts){
-        _assertArray(atts);
-        var Constructor = coll.model;
-        coll.reset(_.map(atts, function(att){
-            return new Constructor(att, opts);
-        }), opts);
-    };
+    var _collection = {
+        /**
+         * Create new Models from the indicated Collection Model, and
+         * 'reset' them on the Collection
+         * @param coll Backbone.Collection which is to be reset with
+         * new models
+         * @param atts raw JSON which is to be used to instantiate new
+         * Models to 'reset' to the Collection
+         * @param opts (optional) options to the Model constructor and
+         * Collection 'reset' method.
+         */
+        reset: function(coll, atts, opts){
+            _assertArray(atts);
+            var Constructor = coll.model;
+            coll.reset(_.map(atts, function(att){
+                return new Constructor(att, opts);
+            }), opts);
+        },
 
-    /**
-     * Create new Models from the indicated Collection Model, and
-     * intelligently merge them in to the Collection.
-     * @param coll Backbone.Collection which is to be merged with
-     * new models
-     * @param atts raw JSON which is to be used to instantiate new
-     * Models to add to the Collection
-     * @param opts (optional) options to the Model constructor
-     * or Model 'set' method
-     */
-    var _setColl = function(coll, atts, opts){
-        _assertArray(atts);
-        var Constructor = coll.model;
-        coll.set(_.map(atts, function(att){
-            return new Constructor(att, opts);
-        }), opts);
-    };
+        /**
+         * Create new Models from the indicated Collection Model, and
+         * intelligently merge them in to the Collection.
+         * @param coll Backbone.Collection which is to be merged with
+         * new models
+         * @param atts raw JSON which is to be used to instantiate new
+         * Models to add to the Collection
+         * @param opts (optional) options to the Model constructor
+         * or Model 'set' method
+         */
+        set: function(coll, atts, opts){
+            _assertArray(atts);
+            var Constructor = coll.model;
+            coll.set(_.map(atts, function(att){
+                return new Constructor(att, opts);
+            }), opts);
+        },
 
-    /**
-     * Default behavior, update nested collection index-based.
-     * (Doesn't really use 'at' function, currently.)
-     */
-    var _atColl = function(coll, atts, opts){
-        _assertArray(atts);
-        var Constructor = coll.model;
-        var alist = _.zip(coll.models, atts);
-        _.each(alist, function(pair, i){
+        /**
+         * Default behavior, update nested collection index-based.
+         * (Doesn't really use 'at' function, currently.)
+         */
+        setAt: function(coll, atts, opts){
+            _assertArray(atts);
+            var Constructor = coll.model;
+            var alist = _.zip(coll.models, atts);
+            _.each(alist, function(pair, i){
 
-            var m = _.first(pair);
-            var att = _.last(pair);
+                var m = _.first(pair);
+                var att = _.last(pair);
 
-            if (att){
-                if (!m){
-                    m = new Constructor(att, opts);
-                    coll.models[i] = m;
-                } else {
-                    m.set(att, opts);
+                if (att){
+                    if (!m){
+                        m = new Constructor(att, opts);
+                        coll.models[i] = m;
+                    } else {
+                        m.set(att, opts);
+                    }
                 }
-            }
-        });
+            });
+        }
     };
 
     /**
@@ -248,7 +253,6 @@
          * 5. the Backbone Model
          */
         getFactory: function(spec){
-
             var factory;
             if (spec){
                 spec = _.isFunction(spec) ? {constructor:spec} : spec;
@@ -256,7 +260,6 @@
             } else {
                 factory = this.notSpecked;
             } 
-
             return factory;
         },
 
@@ -274,19 +277,19 @@
                 if (existing){
                     switch (options.coll){
                     case "reset":
-                        _resetColl(thingy, v, options);
+                        _collection.reset(thingy, v, options);
                         break;
                     case "set":
-                        _setColl(thingy, v, options);
+                        _collection.set(thingy, v, options);
                         break;
                     case "at":
                         /* jshint -W086 */
                     default:
-                        _atColl(thingy, v, options);
+                        _collection.setAt(thingy, v, options);
                         break;
                     }
                 } else {
-                    _resetColl(thingy, v, options);
+                    _collection.reset(thingy, v, options);
                 }
             } else {// It's a Backbone.Model
                 thingy.set(v, options);
@@ -298,7 +301,7 @@
         },
 
         /**
-         * There is no spec for this attribute. Therefore, do default
+         * There is no spec for the attribute. Therefore, do default
          * nesting: if existing value is an array or object, add to
          * it. Otherwise return the new value;
          */
