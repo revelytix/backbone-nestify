@@ -225,6 +225,98 @@
     };
 
     /**
+     * Group together factory-related functions.
+     *
+     * A factory is a function which produces a value to be set at a
+     * given Model or Collection attribute, according to the nestify
+     * spec. It might be a new value, a modified existing value, an
+     * unmodified existing value, or anything really.
+     */
+    var _factories = {
+
+        /**
+         * Returns a factory function which will produce a value for
+         * nesting.
+         * @param spec factory spec: the part of the nestify spec which
+         * specifies how to produce a value for nesting.
+         * @return a function which produces a value to be set for an
+         * attribute. The function takes these args: 
+         * 1. the unmodified value to be set
+         * 2. the existing value (may be null or undefined)
+         * 3. the options hash
+         * 4. the String attribute name
+         * 5. the Backbone Model
+         */
+        getFactory: function(spec){
+
+            var factory;
+            if (spec){
+                spec = _.isFunction(spec) ? {constructor:spec} : spec;
+                factory = _.partial(this.specked, spec);
+            } else {
+                factory = this.notSpecked;
+            } 
+
+            return factory;
+        },
+
+        /**
+         * Nested Backbone Model or Constructor case.
+         */
+        specked: function(spec, v, existing, options){
+            // Either reuse the nested thingy, if
+            // present, or create a new nested instance
+            var thingy = existing || new spec.constructor(spec.args);
+
+            // TODO Backbone.Collection has a 'set' method in
+            // Backbone 1.0.0; just use 'reset' for now.
+            if (thingy.reset){// It's a Backbone.Collection
+                if (existing){
+                    switch (options.coll){
+                    case "reset":
+                        _resetColl(thingy, v, options);
+                        break;
+                    case "set":
+                        _setColl(thingy, v, options);
+                        break;
+                    case "at":
+                        /* jshint -W086 */
+                    default:
+                        _atColl(thingy, v, options);
+                        break;
+                    }
+                } else {
+                    _resetColl(thingy, v, options);
+                }
+            } else {// It's a Backbone.Model
+                thingy.set(v, options);
+            }
+
+            // Finally, set the nested thingy on the
+            // current attributes.
+            return thingy;
+        },
+
+        /**
+         * There is no spec for this attribute. Therefore, do default
+         * nesting: if existing value is an array or object, add to
+         * it. Otherwise return the new value;
+         */
+        notSpecked: function(val, existing){
+            var newVal = val;
+            if (existing){
+                if (_.isArray(existing)){
+                    newVal = _.map(_.zip(val, existing), _.compose(_.first, _.compact));
+                } else if (_.isObject(existing)){
+                    newVal = _.extend({}, existing, val);
+                }
+            } 
+            return newVal;
+        }
+    };
+
+
+    /**
      * The input 'setAttributes' is raw json; reduce over it to
      * produce an equivalent object with existing nested backbone
      * models or other objects in the right places.
@@ -255,54 +347,10 @@
             if (v instanceof Backbone.Model ||
                 v instanceof Backbone.Collection ||
                 (options.unset && !existy(v))){
-                // skip to end
             } else {
-                var existing = (this.attributes && this.attributes[k]);
-                var ctx = spec[k];
-
-                if (ctx){
-                    // Nested Backbone Model or Constructor case.
-
-                    // Either reuse the nested thingy, if
-                    // present, or create a new nested instance
-                    var thingy = existing || new ctx.constructor(ctx.args);
-
-                    // TODO Backbone.Collection has a 'set' method in
-                    // Backbone 1.0.0; just use 'reset' for now.
-                    if (thingy.reset){// It's a Backbone.Collection
-                        if (existing){
-                            switch (options.coll){
-                            case "reset":
-                                _resetColl(thingy, v, options);
-                                break;
-                            case "set":
-                                _setColl(thingy, v, options);
-                                break;
-                            case "at":
-                                /* jshint -W086 */
-                            default:
-                                _atColl(thingy, v, options);
-                                break;
-                            }
-                        } else {
-                            _resetColl(thingy, v, options);
-                        }
-                    } else {// It's a Backbone.Model
-                        thingy.set(v, options);
-                    }
-
-                    // Finally, set the nested thingy on the
-                    // current attributes.
-                    newVal = thingy;
-                } else if (existing){
-                    // Existing value with name
-                    if (_.isArray(existing)){
-                        newVal = _.map(_.zip(v, existing), _.compose(_.first, _.compact));
-                    } else if (_.isObject(existing)){
-                        newVal = _.extend({}, existing, v);                                    
-                    }
-                } 
-
+                var existing = (this.attributes && this.attributes[k]),
+                    factory = _factories.getFactory(spec[k]);
+                newVal = factory(v, existing, options, k, this);
             }
             atts[k] = newVal;
 

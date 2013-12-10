@@ -880,6 +880,18 @@
 
 
             describe('Model/Collection constructor spec', function(){
+
+                it("can be abbreviated if it's only a constructor fn", function(){
+                    var spec = nestify({
+                        'order':env.Order
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({order:{id:2112}});
+                    expect(model.get('order')).to.be.an.instanceof(env.Order);
+                    expect(model.get("order|id")).to.equal(2112);
+                });
+
+
                 it('can contain additional args', function(){
                     var spec = nestify({
                         'order':{constructor:env.Order,
