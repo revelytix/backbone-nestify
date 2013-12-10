@@ -891,7 +891,6 @@
                     expect(model.get("order|id")).to.equal(2112);
                 });
 
-
                 it('can contain additional args', function(){
                     var spec = nestify({
                         'order':{constructor:env.Order,
@@ -901,6 +900,22 @@
                     model.set({order:{id:2112}});
                     expect(model.get("order|backordered")).to.equal("2113-11-29");
                 });
+
+                it('can contain an arbitrary factory function', function(){
+                    var o = new env.Order();
+                    var spec = nestify({
+                        'order': {
+                            fn: function(v, existing, opts){
+                                o.set(v, opts);
+                                return o;
+                            }
+                        }
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({order:{id:2112}});
+                    expect(o.get("id")).to.equal(2112);
+                });
+
             });
 
             describe('example usage', function(){

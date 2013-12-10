@@ -246,17 +246,22 @@
          * specifies how to produce a value for nesting.
          * @return a function which produces a value to be set for an
          * attribute. The function takes these args: 
-         * 1. the unmodified value to be set
+         * 1. the unmodified JSON to be set (JSON format)
          * 2. the existing value (may be null or undefined)
          * 3. the options hash
-         * 4. the String attribute name
+         * 4. the String attribute name (will be the only key in the
+         *    1st param)
          * 5. the Backbone Model
          */
         getFactory: function(spec){
             var factory;
             if (spec){
-                spec = _.isFunction(spec) ? {constructor:spec} : spec;
-                factory = _.partial(this.specked, spec);
+                if (_.isFunction(spec.fn)) {
+                    factory = spec.fn;
+                } else {
+                    spec = _.isFunction(spec) ? {constructor:spec} : spec;
+                    factory = _.partial(this.specked, spec);
+                }
             } else {
                 factory = this.notSpecked;
             } 
