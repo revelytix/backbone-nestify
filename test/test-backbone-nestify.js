@@ -538,7 +538,7 @@
                 var order = new env.Order();
                 order.set("something|2|spicy", "meatball");
                 expect(order.get("something")).to.not.be.an.instanceof(Backbone.Collection);
-                expect(order.get("something")).to.be.instanceof(Array);
+                expect(order.get("something")).to.be.an.instanceof(Array);
                 expect(order.get("something|2")).to.not.be.an.instanceof(Backbone.Model);
                 expect(order.get("something|2")).to.not.be.an.instanceof(Array);
                 expect(order.get("something|2")).to.be.an.instanceof(Object);
@@ -580,6 +580,157 @@
                 expect(acct).to.be.an.instanceof(env.Account);
                 expect(acct.constructor).to.equal(env.Account);
             });
+
+            it('should replace objects (no mixin)', function(){
+                var order = new Backbone.Model();
+                order.set({item: {id: 1,
+                                  desc:"laptop",
+                                  count: 1}});
+                order.set({item: {id: 1,
+                                  size:"large",
+                                  count:2}});
+                expect(order.get("item")).to.deep.equal({
+                    id: 1,
+                    size:"large",
+                    count:2
+                });
+            });
+
+            it('should overlay objects?', function(){
+                var order = _.extend(new Backbone.Model(), nestify());
+                order.set({item: {id: 1,
+                                  desc:"laptop",
+                                  count: 1}});
+                order.set({item: {id: 1,
+                                  size:"large",
+                                  count:2}});
+                expect(order.get("item")).to.deep.equal({
+                    id: 1,
+                    desc:"laptop",
+                    size:"large",
+                    count:2
+                });
+            });
+
+            it('should overlay objects?', function(){
+                var order = _.extend(new Backbone.Model(), nestify());
+                order.set({item: {id: 1,
+                                  desc:"laptop",
+                                  count: 1}});
+                order.set("item|id", 1);
+                order.set("item|size", "large");
+                order.set("item|count", 2);
+                
+                expect(order.get("item")).to.deep.equal({
+                    id: 1,
+                    desc:"laptop",
+                    size:"large",
+                    count:2
+                });
+            });
+
+            it('should replace arrays (no mixin)', function(){
+                var order = new Backbone.Model();
+                order.set({items: [{
+                    id: 1,
+                    desc:"laptop",
+                    size: "med",
+                    count: 1
+                }, {
+                    id: 2,
+                    desc:"celery",
+                    count: 1
+                }]});
+                order.set({items: [{
+                    id: 1,
+                    desc:"laptop",
+                    count: 2
+                },null,{
+                    id: 3,
+                    desc:"broccoli",
+                    count: 2
+                }]});
+                expect(order.get("items")).to.deep.equal([{
+                    id: 1,
+                    desc:"laptop",
+                    count: 2
+                }, null, {
+                    id: 3,
+                    desc:"broccoli",
+                    count: 2
+                }]);
+            });
+
+            it('should overlay arrays?', function(){
+                var order = _.extend(new Backbone.Model(), nestify());
+                order.set({items: [{
+                    id: 1,
+                    desc:"laptop",
+                    size: "med",
+                    count: 1
+                }, {
+                    id: 2,
+                    desc:"celery",
+                    count: 1
+                }]});
+                order.set({items: [{
+                    id: 1,
+                    desc:"laptop",
+                    count: 2
+                },null,{
+                    id: 3,
+                    desc:"broccoli",
+                    count: 2
+                }]});
+                expect(order.get("items")).to.deep.equal([{
+                    id: 1,
+                    desc:"laptop",
+                    // size: "med", //TODO ???
+                    count: 2
+                }, {
+                    id: 2,
+                    desc:"celery",
+                    count: 1
+                }, {
+                    id: 3,
+                    desc:"broccoli",
+                    count: 2
+                }]);
+            });
+
+/* TODO temporarily disabled until figured out
+            it('should overlay arrays? also', function(){
+                var order = _.extend(new Backbone.Model(), nestify());
+                order.set({items: [{
+                    id: 1,
+                    desc:"laptop",
+                    size: "med",
+                    count: 1
+                }, {
+                    id: 2,
+                    desc:"celery",
+                    count: 1
+                }]});
+
+                order.set("items|0|count", 2);
+                order.set("items|2|id", 3);
+                order.set("items|2|count", 2);
+
+                expect(order.get("items")).to.deep.equal([{
+                    id: 1,
+                    desc:"laptop",
+                    // size: "med", //TODO ???
+                    count: 2
+                }, {
+                    id: 2,
+                    desc:"celery",
+                    count: 1
+                }, {
+                    id: 3,
+                    count: 2
+                }]);
+            });
+*/
         });
 
         /**
@@ -901,7 +1052,7 @@
                     expect(model.get("order|backordered")).to.equal("2113-11-29");
                 });
 
-                it('can contain an arbitrary factory function', function(){
+                it('can contain an arbitrary nest function', function(){
                     var o = new env.Order();
                     var spec = nestify({
                         'order': {
@@ -916,7 +1067,7 @@
                     expect(o.get("id")).to.equal(2112);
                 });
 
-                it('can contain a spec for a constructor', function(){
+                it('can contain a nested spec for a constructor', function(){
                     var spec = nestify({
                         'order':{constructor:Backbone.Model,
                                  spec: {item:env.Item}
@@ -927,6 +1078,127 @@
                     expect(model.get('order|item')).to.be.an.instanceof(env.Item);
                     expect(model.get("order|item|id")).to.equal(2112);
                 });
+            });
+
+            /**
+             * For advanced specification...
+             *
+             * The spec can be thought of as a list of matcher/nest
+             * pairs. The simple object hash is, in effect, a list of
+             * String attribute names (matched with '===') paired with
+             * nests.
+             */
+            describe('expanded spec list syntax', function(){
+
+                it('has equivalent to top-level function', function(){
+
+                    /**
+                     * By passing a list, you are opting in to the
+                     * more advanced syntax
+                     */
+                    var spec = nestify([{
+                        hash: {order:env.Order,
+                               item:env.Item}
+                    }], {delim:"."});
+
+                    /** equivalent to this: */
+                    var spec2 = nestify({
+                        order:env.Order,
+                        item:env.Item
+                    }, {delim:"."});
+
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({order:{id:2112}});
+                    model.set({item:{id:5150}});
+                    expect(model.get('order')).to.be.an.instanceof(env.Order);
+                    expect(model.get("order.id")).to.equal(2112);
+                    expect(model.get('item')).to.be.an.instanceof(env.Item);
+                    expect(model.get("item.id")).to.equal(5150);
+                });
+
+                it('can have regex matchers', function(){
+
+                    var spec = nestify([{
+                        matcher: /ord/,
+                        nest: env.Order
+                    }], {delim:"."});
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({
+                        order:{id:2112},
+                        ordur:{id:2113},
+                        odor:{id:2114}
+                    });
+                    expect(model.get('order')).to.be.an.instanceof(env.Order);
+                    expect(model.get("order.id")).to.equal(2112);
+                    expect(model.get('ordur')).to.be.an.instanceof(env.Order);
+                    expect(model.get("ordur.id")).to.equal(2113);
+                    expect(model.get('odor')).not.to.be.an.instanceof(env.Order);
+                    expect(model.get('odor')).to.be.an.instanceof(Object);
+                    expect(model.get("odor.id")).to.equal(2114);
+                });
+
+                it('can have String matchers', function(){
+
+                    var spec = nestify([{
+                        matcher: "ord",
+                        nest: env.Order
+                    }], {delim:"."});
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({
+                        order:{id:2112},
+                        ord:{id:2113}
+                    });
+                    expect(model.get('order')).not.to.be.an.instanceof(env.Order);
+                    expect(model.get('order')).to.be.an.instanceof(Object);
+                    expect(model.get("order.id")).to.equal(2112);
+                    expect(model.get('ord')).to.be.an.instanceof(env.Order);
+                    expect(model.get("ord.id")).to.equal(2113);
+                    expect(model.get('ord')).to.be.an.instanceof(env.Order);
+                });
+
+                it('can have predicate function matchers', function(){
+                    var spec = nestify([{
+                        matcher: function(attr, val, existing, opts){
+                            return attr.length === opts.matchForLength;
+                        },
+                        nest: Backbone.Model
+                    }], {delim:".",
+                         matchForLength:3});
+
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({
+                        fo:{id:2112},
+                        fo3:{id:2113},
+                        foe:{id:2114},
+                        four:{id:2115}
+                    });
+
+                    expect(model.get('fo3')).to.be.an.instanceof(Backbone.Model);
+                    expect(model.get("fo3.id")).to.equal(2113);
+                    expect(model.get('foe')).to.be.an.instanceof(Backbone.Model);
+                    expect(model.get("foe.id")).to.equal(2114);
+                    expect(model.get('fo')).not.to.be.an.instanceof(Backbone.Model);
+                    expect(model.get('fo')).to.be.an.instanceof(Object);
+                    expect(model.get("fo.id")).to.equal(2112);
+                    expect(model.get('four')).not.to.be.an.instanceof(Backbone.Model);
+                    expect(model.get('four')).to.be.an.instanceof(Object);
+                    expect(model.get("four.id")).to.equal(2115);
+                });
+
+                it('omitted "matcher" means match all', function(){
+
+                    var spec = nestify([{
+                        nest: Backbone.Model
+                    }], {delim:"."});
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set({
+                        order:{id:2112},
+                        ord:{id:2113}
+                    });
+                    expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
+                    expect(model.get('ord')).to.be.an.instanceof(Backbone.Model);
+                });
+
             });
 
             describe('example usage', function(){
@@ -964,6 +1236,119 @@
                     expect(shoppingCart.get(["pending","items",0,"itemID"])).to.equal("bk28");
                 });
             });
+
+            describe('convenience functions', function(){
+                /**
+                 * A convenience to create a spec that will simply
+                 * auto-nest into plain vanilla Backbone Models or
+                 * Collections. No config necessary.
+                 */
+                it('can create an auto-nest spec', function(){
+                    var spec = nestify.auto({delim:"."});
+                    var model = _.extend(new Backbone.Model(), spec);
+
+                    model.set("order.items.0.id", 2112);
+                    expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
+                    expect(model.get('order.items')).to.be.an.instanceof(Backbone.Collection);
+                    expect(model.get('order.items.0')).to.be.an.instanceof(Backbone.Model);
+                    expect(model.get("order.items.0.id")).to.equal(2112);
+
+                    model.set({order:{items: [{id: 2113}]}});
+                    expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
+                    expect(model.get('order.items')).to.be.an.instanceof(Backbone.Collection);
+                    expect(model.get('order.items.0')).to.be.an.instanceof(Backbone.Model);
+                    expect(model.get("order.items.0.id")).to.equal(2113);
+                });                
+            });
         });
+
+        /* just some API doodling */
+        var example = function(){
+
+            // 1.
+            nestify({
+                foo: FooModel,
+                bar: BarModel
+            });
+
+            // 2. equivalent to:
+            nestify([{
+                hash: {foo: FooModel,
+                       bar: BarModel}
+            }]);
+
+            // 3. full-blown example:
+            nestify([{
+                hash: {foo: FooModel,
+                       bar: BarModel}
+            },{
+                matcher: /abc/,
+                nest: BarModel
+            },{
+                matcher: function(){return true;},
+                nest: BarModel
+            },{
+                // default case, no 'matcher'
+                nest: {
+                    constructor: BazModel,
+                    args: {argle:"bargle"}
+                }
+            }],{ // optional 'opts' arg
+                delim: "."
+            });
+
+            // nestify a Class
+            nestify(FooModel);
+
+            // nestify a Class
+            nestify(FooModel, {bar: BarModel}, {delim:"."});
+
+            // nestify an instance
+            nestify(new Backbone.Model());
+
+            // auto-nesting?
+            nestify.autoNest();
+            nestify.autoNest(m);
+            nestify.autoNest({delim:"."});
+            nestify.autoNest(m, {delim:"."});
+            nestify(m, {}, {delim:".", 
+                            autoNest:true});
+            nestify(m, nestify.specs.auto);
+            nestify.auto(m, {});
+                       
+
+        };
+
+
+        /*
+         * TODO
+         *
+         * API
+         * -auto-nest into Backbone Models/Collections
+         * -nestify an existing instance
+         * -option to allow overwriting existing containers 
+         * -convenience alternatives to nestify Models/Collections constructors or instances
+         * -provide convenience matchers, namespaced
+         *
+         * FEATURES
+         * -events of nested models
+         *
+         * BUGS
+         * -behavior of 'clear', 'unset'?
+         * -updating unspec'ed objects, arrays (compare to native Backbone)
+         * -probably shouldn't allow Backbone.Model or
+         * Backbone.Collection constructors themselves to be modified
+         *
+         * DOCUMENTATION
+         * -container: attribute value which can hold nested attributes
+         * --one of: Model, Collection, Array, Object
+         * --any of these are indexable by nestify syntax
+         *
+         * OPTIMIZATIONS
+         * -caching/memoizing (if need be, and document)
+         *  -caching might need to be disabled if user wants side-effecty matcher functions
+         * -type of container can be inferred up front in all cases
+         * except a 'nest' function, since it's a black box until run time.
+         */
     });
 }));

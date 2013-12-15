@@ -102,7 +102,7 @@
     };
 
     /**
-     * Converts a path of key(s) and a value to raw JSON object
+     * Converts a path of key(s) and a value to Object
      * form. Nested simple objects and/or arrays will be created
      * as necessary.
      * 
@@ -124,7 +124,7 @@
      * @param value a simple value (not an object or array)
      * @return 
      * if path is (1) return {path: value}
-     * if path is (2) build up json
+     * if path is (2) build up Object
      * if path is (3), return path unmodified
      */
     var _toObj = function(path, value){
@@ -173,7 +173,7 @@
          * 'reset' them on the Collection
          * @param coll Backbone.Collection which is to be reset with
          * new models
-         * @param atts raw JSON which is to be used to instantiate new
+         * @param atts raw Object which is to be used to instantiate new
          * Models to 'reset' to the Collection
          * @param opts (optional) options to the Model constructor and
          * Collection 'reset' method.
@@ -191,7 +191,7 @@
          * intelligently merge them in to the Collection.
          * @param coll Backbone.Collection which is to be merged with
          * new models
-         * @param atts raw JSON which is to be used to instantiate new
+         * @param atts raw Object which is to be used to instantiate new
          * Models to add to the Collection
          * @param opts (optional) options to the Model constructor
          * or Model 'set' method
@@ -230,151 +230,306 @@
     };
 
     /**
-     * Group together factory-related functions.
-     *
-     * A factory is a function which produces a value to be set at a
-     * given Model or Collection attribute, according to the nestify
-     * spec. It might be a new value, a modified existing value, an
-     * unmodified existing value, or anything really.
+     * Matchers. Functions are predicates (return true or false) and
+     * take the following parameters:
+     * 1. the String attribute name
+     * 2. the value to be set (may be null or undefined)
+     * 3. the existing value for that attribute (may be null or undefined)
+     * 4. the options hash
      */
-    var _factories = {
+    var _matchers = {
 
         /**
-         * Returns a factory function which will produce a value for
+         * Needs to be partially invoked, providing the 'str' arg
+         */
+        stringMatcher: function(str, attr){
+            return str === attr;
+        },
+
+        /**
+         * Needs to be partially invoked, providing the 'regex' arg
+         */
+        regexMatcher: function(regex, attr){
+            return regex.test(attr);
+        },
+
+        matchAll: function(){
+            return true;
+        },
+
+        /**
+         * This predicate indicates the input value should not be 
+         * modified by this plugin. Currently: if the value is already
+         * a Backbone Model or Collection, or if 'clear' or 'unset' is
+         * occurring.
+         */
+        useUnmodified: function(att, v, existing, opts){
+            return (v instanceof Backbone.Model ||
+                    v instanceof Backbone.Collection ||
+                    (opts.unset && !existy(v)));
+        },
+
+        isModel: function(att, v){
+        },
+
+        isCollection: function(att, v){
+        },
+
+        isArray: function(att, v){
+            return _.isArray(v);
+        },
+       
+        isObject: function(att, v){
+            return _.isObject(v);
+        }
+    };
+
+    /**
+     * Group together nest-related functions.
+     * TODO reword following paragraph:
+     * A 'nest' is a function which produces a container type to be set at a
+     * given Model or Collection attribute, according to the nestify
+     * spec. It's intended to be a Backbone Model or Container
+     * instance of some type, either a new instance or a modified
+     * existing one; or even just a native JavaScript Object or Array
+     */
+    var _nest = {
+
+        /**
+         * Iterate through the list of specs; return the 'nest' fn of the
+         * first one that is a match for the indicated attribute.
+         * @param specs compiled list of specs
+         * @param attName String attribute name which may be specified
+         * to be paired with a nested container of some sort
+         * @param val value at attribute 'attName'; possibly a
+         * container of some sort. Possibly null or undefined.
+         * @param existing value at attribute 'attName'; possibly a
+         * container of some sort
+         * @param opts the usual opts to Backbone or this plugin
+         * @return the matched container nest function
+         */
+        findNestFn: function(specs, attName, val, existing, opts){
+            var match = _.find(specs, function(spec){
+                return spec._matcherFn(attName, val, existing, opts);
+            });
+            return match ? match._nestFn : _.bind(this.notSpecked, this);
+        },
+
+        /**
+         * Returns a nest function which will produce a container for
          * nesting.
-         * @param spec factory spec: the part of the nestify spec which
-         * specifies how to produce a value for nesting.
-         * @return a function which produces a value to be set for an
+         * @param spec 'nest' spec: the part of the nestify spec which
+         * specifies how to produce a container for nesting.
+         * @return a function which produces a container to be set for an
          * attribute. The function takes these args: 
-         * 1. the unmodified JSON to be set (JSON format)
-         * 2. the existing value (may be null or undefined)
+         * 1. the unmodified container being set
+         * 2. the existing container (may be null or undefined)
          * 3. the options hash
-         * 4. the String attribute name (will be the only key in the
-         *    1st param)
+         * 4. the String attribute name
          * 5. the Backbone Model
          */
-        getFactory: function(spec){
-            var factory;
-            if (spec){
-                if (_.isFunction(spec.fn)) {
-                    factory = spec.fn;
-                } else {
-                    spec = _.isFunction(spec) ? {constructor:spec} : spec;
-                    // Thunkify creation of new value; it may not be needed
-                    factory = _.partial(this.specked, function(){
-                        var result = new spec.constructor(spec.args);
-                        if (spec.spec){
-                            _.extend(result, mixinFn(spec.spec));
-                        }
-                        return result;
-                    });
-                }
+        makeNestFn: function(spec){
+            var nestFn;
+
+            if (_.isFunction(spec.fn)) {
+                nestFn = spec.fn;
             } else {
-                factory = this.notSpecked;
-            } 
-            return factory;
+                spec = _.isFunction(spec) ? {constructor:spec} : spec;
+                // Thunkify creation of new container; it may not be needed
+                nestFn = _.partial(this.specked, function(opts){
+                    var container = new spec.constructor(spec.args);
+                    /* Here's where that undocumented flag gets detected. */
+                    if (spec.spec === "recurse"){
+                        _.extend(container, opts.compiled);
+                    } else if (spec.spec){
+                        _.extend(container, mixinFn(spec.spec));
+                    }
+                    return container;
+                });
+            }
+
+            return nestFn;
         },
 
         /**
          * Nested Backbone Model or Constructor case.
          */
         specked: function(thunk, v, existing, options){
-            // Either reuse the nested thingy, if
+            // Either reuse the nested container, if
             // present, or realize the new nested instance from 
             // the thunk.
-            var thingy = existing || thunk();
+            var container = existing || thunk(options);
 
             // TODO Backbone.Collection has a 'set' method in
             // Backbone 1.0.0; just use 'reset' for now.
-            if (thingy.reset){// It's a Backbone.Collection
+            if (container.reset){// It's a Backbone.Collection
                 if (existing){
                     switch (options.coll){
                     case "reset":
-                        _collection.reset(thingy, v, options);
+                        _collection.reset(container, v, options);
                         break;
                     case "set":
-                        _collection.set(thingy, v, options);
+                        _collection.set(container, v, options);
                         break;
                     case "at":
                         /* jshint -W086 */
                     default:
-                        _collection.setAt(thingy, v, options);
+                        _collection.setAt(container, v, options);
                         break;
                     }
                 } else {
-                    _collection.reset(thingy, v, options);
+                    _collection.reset(container, v, options);
                 }
             } else {// It's a Backbone.Model
-                thingy.set(v, options);
+                container.set(v, options);
             }
 
-            // Finally, set the nested thingy on the
-            // current attributes.
-            return thingy;
+            return container;
         },
 
         /**
          * There is no spec for the attribute. Therefore, do default
-         * nesting: if existing value is an array or object, add to
-         * it. Otherwise return the new value;
+         * nesting: if existing container is an array or object, add to
+         * it. Otherwise return the new container;
+         * DEPRECATED TODO remove
          */
-        notSpecked: function(val, existing){
-            var newVal = val;
+        notSpecked: function(container, existing){
+            var newContainer = container;
             if (existing){
                 if (_.isArray(existing)){
-                    newVal = _.map(_.zip(val, existing), _.compose(_.first, _.compact));
+                    newContainer = this.overlayArray(container, existing);
                 } else if (_.isObject(existing)){
-                    newVal = _.extend({}, existing, val);
+                    newContainer = this.overlayObject(container, existing);
                 }
             } 
-            return newVal;
+            return newContainer;
+        },
+
+        /**
+         * Overlay the contents of the new 'container' Object into the
+         * contents of the 'existing' Object.
+         */
+        overlayObject: function(container, existing){
+            return _.extend({}, existing, container);
+        },
+
+        /**
+         * Overlay the contents of the new 'container' array into the
+         * contents of the 'existing' array.
+         */
+        overlayArray: function(container, existing){
+            return _.map(_.zip(container, existing), _.compose(_.first, _.compact));
         }
     };
 
-
     /**
-     * The input 'setAttributes' is raw json; reduce over it to
-     * produce an equivalent object with existing nested backbone
-     * models or other objects in the right places.
+     * The input 'setAttributes' is an Object; reduce over it to
+     * produce an equivalent Object with existing nested Backbone
+     * Models or other objects in the right places.
      * @param this a Backbone.Model having this mixin
      * @param spec currently, a hash of String model
      * attribute names, mapped to the constructor which must be
      * used to instantiate a new nested Backbone model for that
      * attribute. (see Example Usage doc)
-     * @param setAttributes the raw JSON which is to be
+     * @param setAttributes the raw input Object which is to be
      * transformed and made ready to be set on the model
-     * @param options (optional) options to the 'set' method
+     * @param opts (optional) options to the 'set' method
      * @return prepared 'set attributes' ready to be set on the
      * Backbone model
      */ 
-    var _prepAttributes  = function(spec, setAttributes, options){
+    var _prepAttributes  = function(spec, setAttributes, opts){
 
-        options = options || {};
+        opts = opts || {};
 
         /**
-         * The input 'setAttributes' is raw json; reduce over it to
+         * The input 'setAttributes' is unmodified input; reduce over it to
          * produce an equivalent object with existing nested backbone
          * models or other objects in the right places. Then set that on 
          * the model.
          */ 
-        setAttributes = _.reduce(setAttributes, function(atts, v, k){
+        setAttributes = _.reduce(setAttributes, function(preppedAtts, v, k){
 
-            var newVal = v;
-            if (v instanceof Backbone.Model ||
-                v instanceof Backbone.Collection ||
-                (options.unset && !existy(v))){
-            } else {
-                var existing = (this.attributes && this.attributes[k]),
-                    factory = _factories.getFactory(spec[k]);
-                newVal = factory(v, existing, options, k, this);
-            }
-            atts[k] = newVal;
+            var existing = (this.attributes && this.attributes[k]),
+                nestFn = _nest.findNestFn(spec, k, v, existing, opts);
+            preppedAtts[k] = nestFn(v, existing, opts, k, this);
 
-            return atts;
+            return preppedAtts;
         }, {}, this);
 
         return setAttributes;
     };
+
+    /**
+     * Group compiler related things together
+     */
+    var _compiler = {
+
+        /**
+         * Produces an internally optimized version of the spec.
+         * Currently: a list of matcher/nest function pairs. 
+         * @param spec input to API
+         * @param opts usual Backbone and/or Nestify options
+         * @return array of objects containing two attributes:
+         * '_matcherFn' and '_nestFn'.
+         */
+        compileSpec: function(spec, opts){
+
+            var specList, 
+                compiled;
+
+            if (_.isArray(spec)){
+                specList = spec;
+            } else if (_.isObject(spec)){
+                specList = [{hash: spec}];
+            } else {
+                specList = [];
+            }
+
+            compiled = [{
+                _matcherFn: _matchers.useUnmodified,
+                _nestFn: _.identity
+            }];
+
+            compiled = _.reduce(specList, function(memo, specPiece){
+                
+                if (specPiece.hash){
+                    _.each(specPiece.hash, function(v, k){
+                        memo.push({
+                            _matcherFn: _.partial(_matchers.stringMatcher, k),
+                            _nestFn: _nest.makeNestFn(v)
+                        });
+                    });
+
+                } else { 
+
+                    var result = {
+                        _nestFn: _nest.makeNestFn(specPiece.nest)
+                    };
+
+                    if (_.isRegExp(specPiece.matcher)){
+                        result._matcherFn = _.partial(_matchers.regexMatcher, specPiece.matcher);
+                    } else if (_.isString(specPiece.matcher)){
+                        result._matcherFn = _.partial(_matchers.stringMatcher, specPiece.matcher);
+                    } else if (_.isFunction(specPiece.matcher)){
+                        result._matcherFn = specPiece.matcher;
+                    } else {
+                        // no matcher specified means match all
+                        result._matcherFn = _matchers.matchAll;
+                    }
+
+                    memo.push(result);
+                }
+
+
+                return memo;
+            }, compiled);
+
+            // stash the compiled spec in the opts
+            opts.compiled = compiled;
+            return compiled;
+        }
+    };
+
 
     /**
      * Return the module: a function which must be invoked to
@@ -386,7 +541,7 @@
      * which will create a new instance of a nested model for
      * storing that attribute.
      *
-     * @param opts options
+     * @param options Backbone and/or Nestify options
      *
      * Example usage - no spec
      * 
@@ -414,11 +569,10 @@
      * </pre></code>
      *
      */
-    var mixinFn = function(spec, opts){
+    var mixinFn = _.extend(function(spec, options){
 
-        var _opts = _.extend({}, _defaultOpts, opts),
-            _spec = spec || {},
-            _prepAtts = _.partial(_prepAttributes, _spec);
+        var _moduleOpts = _.extend({}, _defaultOpts, options),
+            _prepAtts = _.partial(_prepAttributes, _compiler.compileSpec(spec, _moduleOpts));
 
         return {
             /**
@@ -435,7 +589,7 @@
              * Collections.
              */
             get: function(keys, opts){
-                opts = _.extend({}, _opts, opts);
+                opts = _.extend({}, _moduleOpts, opts);
                 keys = _delimitedStringToArray(keys, opts);
                 if (_.isArray(keys)){
                     return _lookup_path(keys, this);
@@ -461,10 +615,10 @@
 
                 var attrs;
                 if (!_.isArray(keys) && _.isObject(keys)) {
-                    opts = _.extend({}, _opts, value);
+                    opts = _.extend({}, _moduleOpts, value);
                     attrs = keys instanceof Backbone.Model ? keys.attributes : keys;
                 } else {
-                    opts = _.extend({}, _opts, opts);
+                    opts = _.extend({}, _moduleOpts, opts);
                     keys = _delimitedStringToArray(keys, opts);
                     attrs = _toObj(keys, value);
                 }
@@ -480,7 +634,44 @@
                 return Backbone.Model.prototype.set.call(this, attrs, opts);
             }
         };
-    };
+    }, {
+
+        /**
+         * alpha-subject to change
+         * Auto-nestify: automatically use Backbone Models and
+         * Collections without an explicit spec.
+         */
+        auto:function(opts){
+
+            // private, anonymous subtypes
+            var M = Backbone.Model.extend(),
+                C = Backbone.Collection.extend({model:M});
+
+            /* 
+             * Use this undocumented flag to indicate using the spec
+             * recursively.
+             */
+            var flag = "recurse";
+
+            var spec = [{
+                matcher: _matchers.isArray,
+                nest: C
+            },{
+                matcher: _matchers.isObject,
+                nest: {
+                    constructor: M,
+                    spec: flag
+                }
+            }];
+
+            var compiled = mixinFn(spec, opts);
+
+            // Mix the compiled spec into our anonymous Model subclass
+            _.extend(M.prototype, compiled);
+
+            return compiled;
+        }
+    });
 
     // for testing purposes
     mixinFn.pathToObject = _toObj;
