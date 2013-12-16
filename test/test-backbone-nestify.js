@@ -1119,7 +1119,7 @@
                 it('can have regex matchers', function(){
 
                     var spec = nestify([{
-                        matcher: /ord/,
+                        match: /ord/,
                         nest: env.Order
                     }], {delim:"."});
                     var model = _.extend(new Backbone.Model(), spec);
@@ -1140,7 +1140,7 @@
                 it('can have String matchers', function(){
 
                     var spec = nestify([{
-                        matcher: "ord",
+                        match: "ord",
                         nest: env.Order
                     }], {delim:"."});
                     var model = _.extend(new Backbone.Model(), spec);
@@ -1158,7 +1158,7 @@
 
                 it('can have predicate function matchers', function(){
                     var spec = nestify([{
-                        matcher: function(attr, val, existing, opts){
+                        match: function(attr, val, existing, opts){
                             return attr.length === opts.matchForLength;
                         },
                         nest: Backbone.Model
@@ -1264,6 +1264,7 @@
 
         /* just some API doodling */
         var example = function(){
+            /* global FooModel, BarModel, BazModel, m */
 
             // 1.
             nestify({
@@ -1282,10 +1283,10 @@
                 hash: {foo: FooModel,
                        bar: BarModel}
             },{
-                matcher: /abc/,
+                match: /abc/,
                 nest: BarModel
             },{
-                matcher: function(){return true;},
+                match: function(){return true;},
                 nest: BarModel
             },{
                 // default case, no 'matcher'
