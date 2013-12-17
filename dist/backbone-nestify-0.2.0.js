@@ -1,4 +1,9 @@
+/* backbone-nestify 0.2.0 2013-12-17
+ * http://revelytix.github.io/backbone-nestify/
+ * Copyright 2013 Revelytix, Inc. All rights reserved. */
 /**
+ * Copyright 2013 Revelytix, Inc. All rights reserved.
+ *
  * A mixin for models with nested models; overrides 'get' and 'set'
  * methods, deals properly with getting/setting raw attributes 
  * from/into the proper nested models.
@@ -637,9 +642,11 @@
     }, {
 
         /**
-         * alpha-subject to change
-         * Auto-nestify: automatically use Backbone Models and
-         * Collections without an explicit spec.
+         * alpha: subject to change
+         * Auto-nestify: automatically nest into Backbone Models and
+         * Collections without explicit specification.
+         * @param opts the usual
+         * @return a mixin (as if calling nestify() per usual)
          */
         auto:function(opts){
 

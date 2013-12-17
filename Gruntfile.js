@@ -38,6 +38,11 @@ module.exports = function(grunt) {
             }
         },
         concat: {
+            options: {
+                banner: '/* <%= pkg.name %> <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %>' +
+                    '\n * <%= pkg.homepage %>' +
+                    '\n * <%= pkg.copyright %> */\n'
+            },
             dist: {
                 src: ['backbone-nestify.js'],
                 dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js'
@@ -45,7 +50,9 @@ module.exports = function(grunt) {
         },
         uglify: {
             options: {
-                banner: '/*! <%= pkg.name %> <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+                banner: '/* <%= pkg.name %> <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %>' +
+                    '\n * <%= pkg.homepage %>' +
+                    '\n * <%= pkg.copyright %> */\n'
             },
             dist: {
                 files: {

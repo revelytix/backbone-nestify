@@ -24,5 +24,6 @@
         "type": "git",
         "url": "https://github.com/revelytix/backbone-nestify.git"
     },
-    "github": "https://github.com/revelytix/backbone-nestify"
+    "github": "https://github.com/revelytix/backbone-nestify",
+    "copyright": "Copyright 2013 Revelytix, Inc. All rights reserved."
 }

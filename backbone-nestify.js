@@ -637,9 +637,11 @@
     }, {
 
         /**
-         * alpha-subject to change
-         * Auto-nestify: automatically use Backbone Models and
-         * Collections without an explicit spec.
+         * alpha: subject to change
+         * Auto-nestify: automatically nest into Backbone Models and
+         * Collections without explicit specification.
+         * @param opts the usual
+         * @return a mixin (as if calling nestify() per usual)
          */
         auto:function(opts){
 

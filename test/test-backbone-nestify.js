@@ -1338,18 +1338,21 @@
          * -behavior of 'clear', 'unset'?
          * -updating unspec'ed objects, arrays (compare to native Backbone)
          * -probably shouldn't allow Backbone.Model or
-         * Backbone.Collection constructors themselves to be modified
+         *  Backbone.Collection constructors themselves to be modified
+         * -nestify delegates directly to Backbone.Model.prototype getter/setter
          *
          * DOCUMENTATION
          * -container: attribute value which can hold nested attributes
          * --one of: Model, Collection, Array, Object
          * --any of these are indexable by nestify syntax
+         * --merging containers policy?
+         * -all 0.2.0 changes
          *
          * OPTIMIZATIONS
          * -caching/memoizing (if need be, and document)
          *  -caching might need to be disabled if user wants side-effecty matcher functions
          * -type of container can be inferred up front in all cases
-         * except a 'nest' function, since it's a black box until run time.
+         *  except a 'nest' function, since it's a black box until run time.
          */
     });
 }));
