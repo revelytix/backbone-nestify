@@ -1340,12 +1340,15 @@
          * -probably shouldn't allow Backbone.Model or
          *  Backbone.Collection constructors themselves to be modified
          * -nestify delegates directly to Backbone.Model.prototype getter/setter
+         * -bug Jon reported
          *
          * DOCUMENTATION
          * -container: attribute value which can hold nested attributes
          * --one of: Model, Collection, Array, Object
          * --any of these are indexable by nestify syntax
          * --merging containers policy?
+         * -API
+         * -advanced spec
          * -all 0.2.0 changes
          *
          * OPTIMIZATIONS
