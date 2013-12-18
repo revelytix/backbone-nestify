@@ -181,6 +181,13 @@
                 acct.set("orders|0|spicy", "meatball");
                 expect(order.get("spicy")).to.equal("meatball");
             });
+
+            it("should support 'length' attribute", function(){
+                var acct = new env.Account({orders: new env.Orders()});
+                expect(acct.get("orders").length).to.equal(0);
+                acct.set("orders|0|spicy", "meatball");
+                expect(acct.get("orders").length).to.equal(1);
+            });
         });
 
         describe('configurable delimiter', function(){
@@ -420,6 +427,7 @@
                     expect(acct.get("orders").models.length).to.equal(2);
                     acct.set({orders:[{hot:"sausage"}]}, {coll:"reset"});
                     expect(acct.get("orders").models.length).to.equal(1);
+                    expect(acct.get("orders").length).to.equal(1);
                 });
 
                 it("can instead be set as a module option", function(){
@@ -435,6 +443,7 @@
                     expect(acct.get("orders").models.length).to.equal(2);
                     acct.set({orders:[{hot:"sausage"}]});
                     expect(acct.get("orders").models.length).to.equal(1);
+                    expect(acct.get("orders").length).to.equal(1);
                 });
             });
 
@@ -453,7 +462,7 @@
                     expect(acct.get("orders").models.length).to.equal(2);
                     acct.set({orders:[{hot:"sausage"}]}, {coll:"set", remove:false});
                     expect(acct.get("orders").models.length).to.equal(3);
-
+                    expect(acct.get("orders").length).to.equal(3);
                 });
 
                 it("can instead be set as a module option", function(){
@@ -469,6 +478,7 @@
                     expect(acct.get("orders").models.length).to.equal(2);
                     acct.set({orders:[{hot:"sausage"}]}, {remove:false});
                     expect(acct.get("orders").models.length).to.equal(3);
+                    expect(acct.get("orders").length).to.equal(3);
                 });
             });
 
@@ -485,6 +495,7 @@
                     expect(acct.get("orders").models.length).to.equal(2);
                     acct.set({orders:[{hot:"sausage"}]}, {coll:"at"});
                     expect(acct.get("orders").models.length).to.equal(2);
+                    expect(acct.get("orders").length).to.equal(2);
                 });
 
                 it("can instead be set as a module option", function(){
@@ -500,6 +511,7 @@
                     expect(acct.get("orders").models.length).to.equal(2);
                     acct.set({orders:[{hot:"sausage"}]});
                     expect(acct.get("orders").models.length).to.equal(2);
+                    expect(acct.get("orders").length).to.equal(2);
                 });
             });
         });

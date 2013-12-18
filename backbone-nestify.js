@@ -220,7 +220,10 @@
                 if (att){
                     if (!m){
                         m = new Constructor(att, opts);
+                        /* Note that this may fill the models
+                         * array sparsely, perhaps unexpectedly. */
                         coll.models[i] = m;
+                        coll.length = coll.models.length;
                     } else {
                         m.set(att, opts);
                     }
