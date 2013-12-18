@@ -1,9 +1,7 @@
-/* backbone-nestify 0.2.0 2013-12-17
+/* backbone-nestify 0.2.0 2013-12-18
  * http://revelytix.github.io/backbone-nestify/
  * Copyright 2013 Revelytix, Inc. All rights reserved. */
 /**
- * Copyright 2013 Revelytix, Inc. All rights reserved.
- *
  * A mixin for models with nested models; overrides 'get' and 'set'
  * methods, deals properly with getting/setting raw attributes 
  * from/into the proper nested models.
@@ -225,7 +223,10 @@
                 if (att){
                     if (!m){
                         m = new Constructor(att, opts);
+                        /* Note that this may fill the models
+                         * array sparsely, perhaps unexpectedly. */
                         coll.models[i] = m;
+                        coll.length = coll.models.length;
                     } else {
                         m.set(att, opts);
                     }
