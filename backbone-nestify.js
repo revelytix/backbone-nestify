@@ -462,75 +462,70 @@
         return setAttributes;
     };
 
+
     /**
-     * Group compiler related things together
+     * Produces an internally optimized version of the spec.
+     * Currently: a list of matcher/nest function pairs. 
+     * @param spec input to API
+     * @param opts usual Backbone and/or Nestify options
+     * @return array of objects containing two attributes:
+     * '_matcherFn' and '_nestFn'.
      */
-    var _compiler = {
+    var _compile = function(spec, opts){
 
-        /**
-         * Produces an internally optimized version of the spec.
-         * Currently: a list of matcher/nest function pairs. 
-         * @param spec input to API
-         * @param opts usual Backbone and/or Nestify options
-         * @return array of objects containing two attributes:
-         * '_matcherFn' and '_nestFn'.
-         */
-        compileSpec: function(spec, opts){
+        var specList, 
+            compiled;
 
-            var specList, 
-                compiled;
+        if (_.isArray(spec)){
+            specList = spec;
+        } else if (_.isObject(spec)){
+            specList = [{hash: spec}];
+        } else {
+            specList = [];
+        }
 
-            if (_.isArray(spec)){
-                specList = spec;
-            } else if (_.isObject(spec)){
-                specList = [{hash: spec}];
-            } else {
-                specList = [];
-            }
+        compiled = [{
+            _matcherFn: _matchers.useUnmodified,
+            _nestFn: _.identity
+        }];
 
-            compiled = [{
-                _matcherFn: _matchers.useUnmodified,
-                _nestFn: _.identity
-            }];
-
-            compiled = _.reduce(specList, function(memo, specPiece){
-                
-                if (specPiece.hash){
-                    _.each(specPiece.hash, function(v, k){
-                        memo.push({
-                            _matcherFn: _.partial(_matchers.stringMatcher, k),
-                            _nestFn: _nest.makeNestFn(v)
-                        });
+        compiled = _.reduce(specList, function(memo, specPiece){
+            
+            if (specPiece.hash){
+                _.each(specPiece.hash, function(v, k){
+                    memo.push({
+                        _matcherFn: _.partial(_matchers.stringMatcher, k),
+                        _nestFn: _nest.makeNestFn(v)
                     });
+                });
 
-                } else { 
+            } else { 
 
-                    var result = {
-                        _nestFn: _nest.makeNestFn(specPiece.nest)
-                    };
+                var result = {
+                    _nestFn: _nest.makeNestFn(specPiece.nest)
+                };
 
-                    if (_.isRegExp(specPiece.match)){
-                        result._matcherFn = _.partial(_matchers.regexMatcher, specPiece.match);
-                    } else if (_.isString(specPiece.match)){
-                        result._matcherFn = _.partial(_matchers.stringMatcher, specPiece.match);
-                    } else if (_.isFunction(specPiece.match)){
-                        result._matcherFn = specPiece.match;
-                    } else {
-                        // no matcher specified means match all
-                        result._matcherFn = _matchers.matchAll;
-                    }
-
-                    memo.push(result);
+                if (_.isRegExp(specPiece.match)){
+                    result._matcherFn = _.partial(_matchers.regexMatcher, specPiece.match);
+                } else if (_.isString(specPiece.match)){
+                    result._matcherFn = _.partial(_matchers.stringMatcher, specPiece.match);
+                } else if (_.isFunction(specPiece.match)){
+                    result._matcherFn = specPiece.match;
+                } else {
+                    // no matcher specified means match all
+                    result._matcherFn = _matchers.matchAll;
                 }
 
+                memo.push(result);
+            }
 
-                return memo;
-            }, compiled);
 
-            // stash the compiled spec in the opts
-            opts.compiled = compiled;
-            return compiled;
-        }
+            return memo;
+        }, compiled);
+
+        // stash the compiled spec in the opts
+        opts.compiled = compiled;
+        return compiled;
     };
 
 
@@ -575,7 +570,7 @@
     var mixinFn = _.extend(function(spec, options){
 
         var _moduleOpts = _.extend({}, _defaultOpts, options),
-            _prepAtts = _.partial(_prepAttributes, _compiler.compileSpec(spec, _moduleOpts));
+            _prepAtts = _.partial(_prepAttributes, _compile(spec, _moduleOpts));
 
         return {
             /**
@@ -675,11 +670,11 @@
             _.extend(M.prototype, compiled);
 
             return compiled;
-        }
-    });
+        },
 
-    // for testing purposes
-    mixinFn.pathToObject = _toObj;
+        // for testing purposes TODO
+        pathToObject: _toObj
+    });
 
     return mixinFn;
 }));
