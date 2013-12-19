@@ -2,7 +2,13 @@
 
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Backbone [Models](http://backbonejs.org/#Model) and [Collections](http://backbonejs.org/#Collection). It depends only on Backbone and [Underscore](http://underscorejs.org/). 
 
-It provides two features:
+## Download
+* [Development](dist/backbone-nestify-0.2.0.js?raw=true) - 23 kb
+* [Production](dist/backbone-nestify-0.2.0.min.js?raw=true) - minified, 4kb
+
+## Features
+
+Backbone Nestify provides two features:
 
 * A syntax to more easily nest, and access, attributes within nested Models and Collections.
 
@@ -26,8 +32,6 @@ var mixin = nestify(spec);
 
 var ShoppingCartModel = Backbone.Model.extend(mixin);
 ```
-
-### Usage
 
 At it's most basic: you provide nestify with a spec and receive a mixin. 
 
@@ -183,17 +187,18 @@ shoppingCart.unset("orders|0|items|2|backOrdered");
 
 ## Nestify Spec
 
-The plugin provides an API which accepts a nesting specification. The resulting mixin can then be set on individual Model instances or Model class constructors. Broadly speaking, the spec is a mapping from Model attribute names to the nested Model or Collection class for those attributes. 
+The plugin provides an API which accepts a nesting **spec**. The resulting **mixin** can then be set on individual Model instances or Model class constructors. Broadly speaking, the spec is a mapping from Model attribute names to the nested Model or Collection class for those attributes. 
 
 In other words, a Model (or Collection) definition (or instance) is nestified once, up front. Thereafter, any modifications to instances of that Model will adhere to the nesting specification. This is particularly good for dynamically deserializing complex JSON into the proper tree of nested Model/Collection instances.
 
+In this illustration, a ShoppingCart Model is nestified. Two of its attributes are paired with the desired nested Model types (Order and Account, respectively).
 ```javascript
 var Order = Backbone.Model.extend(...
     Account = Backbone.Model.extend(...
 
 var shoppingCartSpec = {
-    pending: {constructor: Order},
-    account: {constructor: Account}
+    'pending': Order,
+    'account': Account
 };
 
 var shoppingCartMixin = nestify(shoppingCartSpec);
@@ -201,13 +206,21 @@ var shoppingCartMixin = nestify(shoppingCartSpec);
 var ShoppingCart = Backbone.Model.extend(shoppingCartMixin);
 ```
 
-A more realistic scenario is to add the spec to other custom properties. (Note the use of Underscore's [extend](http://underscorejs.org/#extend) function.)
+A more typical scenario is to combine the mixin with other custom properties when defining a Model definition. (Note the use of Underscore's [extend](http://underscorejs.org/#extend) function.)
 
 ```javascript
 var ShoppingCart = Backbone.Model.extend(_.extend({
-    // ...custom stuff...
+    // ...custom properties...
 }, shoppingCartMixin));
 ```
+
+Once nestified, the ShoppingCart Model is ready to be used.
+```javascript
+var cart = new ShoppingCart();
+cart.set("pending|id", 5);
+cart.get("pending"); // returns an Order instance with an 'id' of 5
+```
+
 
 ### Applying the Mixin
 
@@ -232,6 +245,10 @@ var shoppingCart = new Backbone.Model();
 
 _.extend(shoppingCart, mixin);
 ```
+
+### Deep Nesting
+
+Nestifying is not confined to the top-level Model only. The nested Model and Collection types can themselves be nestified (as can be seen in the [Example](#example)).
 
 ## Options
 
@@ -302,6 +319,225 @@ order.set({items:[null,{id:3,desc:"butter"}]}, {coll:"at"});
 ...which would be equivalent to using the nestify syntax:
 ```javascript
 order.set("items|1|", {id:3,desc:"butter"});
+```
+
+## Advanced Spec
+
+In the examples so far, the **spec** has always been a simple **hash** of Model attributes to nested Model or Collection **container** types. This _abbreviated_ form is expected to be the typical, 80% use case.
+
+```javascript
+var shoppingCartSpec = {
+    'pending': Order,
+    'account': Account
+};
+```
+
+But it is possible to opt-in to a more verbose but powerful _general_ spec form.
+
+
+### General Form
+
+The general spec form has the following structure (in pseudo-BNF):
+
+```
+// The full-blown, general 'spec' is actually an array of specs.
+<speclist>    ::= [ spec ]
+
+<spec>        ::= { match: <matcher>, /* optional; omitted means 'match 
+                                         any/all attribute names' */
+                    container: <container> }
+                | { hash: <hash> }
+                
+<hash>        // this is just the abbreviated 'hash' spec form
+
+<matcher>     ::= String
+                | RegExp
+                | Function  // predicate
+
+<container>   ::= <Constructor>
+                | {constructor: <constructor>,
+                   args       : <arguments to constructor>, // optional 
+                   spec       : <speclist>                  // optional
+                | Function // "arbitrary" container
+
+<constructor> ::= <Backbone Model constructor Function> 
+                | <Backbone Collection constructor Function>
+```
+
+
+### Hash
+
+By passing an **array** to Nestify, you are opting-in to the advanced spec form; you cannot use the abbreviated hash form. But, you can still explicitly supply a hash thusly:
+
+```javascript
+// advanced form, explicit 'hash'
+var spec = [{hash: {account: AccountModel,
+                    orders: OrdersCollection}}];
+
+// equivalent to abbreviated form:
+var spec = {account: AccountModel,
+            orders: OrdersCollection}}
+```
+
+A hash can be thought of as the degenerate form of the more general, more powerful pairing of **matchers** and a **containers**.
+
+### Matcher
+
+An alternative to the hash is a **matcher**/**container** pair. A matcher can be used to match on any of the containing Model's attributes; The container specifies what sort of object should be stored for that attribute, to contain nested attributes.
+
+#### String
+
+A String matcher implies doing a `===` match on the attribute name.
+
+```javascript
+{match: "foo",
+ container: FooModel}
+
+// equivalent to
+{hash: {'foo': FooModel}}
+```
+
+#### RegExp
+
+A JavaScript RegExp can be used as a matcher for more powerful attribute matching.
+
+```javascript
+{match: /ord/,
+ container: OrderModel}
+```
+
+#### Function
+
+For maximum matching capability, a JavaScript Function can be used.
+
+```javascript
+var len=3;
+
+//...
+{match: function(attr, val, existing, opts){
+    return attr.length === len;
+ },
+ container: OrderModel}
+```
+
+The supplied matcher function will be passed these parameters: 
+
+* The String `attribute` name
+* The incoming, unmodified container `value` to be set
+* The `existing` container, if any
+* The `opts` hash
+
+#### Omitted
+
+The matcher can be omitted entirely; this means "match all attributes".
+
+```javascript
+// will match everything
+{container: EverythingModel}
+```
+
+### Container
+
+Conceptually speaking, a **container** is anything that can hold a nested value. It is a Model attribute which Nestify can use to nest attributes. It can be any of: `Backbone Model`, `Backbone Collection`, `Function`, `Array`, `Object`.
+
+All containers can be indexed using the [getter/setter syntax](#nestify-gettersetter-syntax).
+
+#### Array or Object
+
+Backbone itself already allows simple nesting via native JavaScript Arrays and Objects; Nestify simply provides its getter/setter syntactic sugar on top of this. In fact, using an empty spec such as this:
+
+```javascript
+var Model = Backbone.Model.extend(nestify());
+```
+
+...will still nestify the Model and allow the use of Nestify's getter/setter syntax. It simply will not change the storage of those nested attributes; they will continue to be stored in plain Objects or Arrays.
+
+```javascript
+var m = new Model({
+    orders: [{id: 1}]
+});
+
+m.get("orders|0|id"); //returns 1
+m.get("orders|0");    //returns an Object
+m.get("orders");      //returns an Array
+
+```
+
+#### Model or Collection
+
+Specifying that a container should be a Backbone Model or Collection is the expected majority use case; just use the constructor Function, like so:
+
+```javascript
+var spec = [{match: "account",
+             container: AccountModel},
+            {match: "orders",
+             container: OrdersCollection}];
+             
+// equivalent to:
+var spec = [{hash: {account: AccountModel,
+                    orders: OrdersCollection}}];
+// and
+var spec = {account: AccountModel,
+            orders: OrdersCollection}}
+
+```
+
+Specifying arguments to the Backbone constructor, and/or specifying a Nestify spec for instances of that Backbone container, can be accomplished like this:
+
+```javascript
+var spec = [{match: "account",
+             container: {constructor: AccountModel,
+                         args: {preferred: true},
+                         spec: {rewards: RewardCollection}
+                        }];
+```
+
+#### Function
+
+For utmost flexibility, a `container` can be a Function. 
+
+The supplied function will be passed five parameters: 
+
+* The incoming, unmodified container `value` to be set (for example, raw JSON)
+* The `existing` container, if any
+* The `opts` hash
+* The String `attribute` name
+* The containing Backbone `Model`
+
+The function should return the resulting `container` object.
+
+```javascript
+var spec = [{match: "account",
+             container: function(v, existing, opts, att, m){
+                 return new AmazingModel(v, opts);
+             }
+            }];
+```
+
+### Example
+
+A full-blown example of the Advanced Spec Form:
+
+```javascript
+    nestify([{
+        hash: {foo: FooModel,
+               bar: BarModel}
+    },{
+        match: /abc/,
+        container: BarModel
+    },{
+        match: function(...){return true;},
+        container: function(...){return something;}
+    },{
+        // default case, no 'matcher'
+        container: {
+            constructor: BazModel,
+            args: {argle:"bargle"},
+            spec: [...BazModel's own spec...]
+        }
+    }],{ // optional 'opts' arg
+        delim: "."
+    });
 ```
 
 ## Under the Hood
