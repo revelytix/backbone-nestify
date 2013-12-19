@@ -561,7 +561,7 @@ I'll be honest here: like countless software developers before us, we identified
 
 Having said all of that, we believe Nestify fills a couple of really sweet spots:
 
-* It is [mixin-based](#applying-the-mixin) rather than Class based. That is, your Models do not have to extend a particular Model superclass in order to use the plugin. Instead, the plugin produces a mixin object which can be added to any existing Model or Collection definition, or even just a single instance of a type of Model or Collection.
+* It is [mixin-based](#nestify-spec/applying-the-mixin) rather than Class based. That is, your Models do not have to extend a particular Model superclass in order to use the plugin. Instead, the plugin produces a mixin object which can be added to any existing Model or Collection definition, or even just a single instance of a type of Model or Collection.
 * a [simple but flexible getter/setter syntax](#nestify-getter-setter-syntax).
 * Nestify was designed especially to make serialization to and from JSON work seamlessly. In our case, we have a RESTful API returning potentially complicated and deeply-nested responses, and we want our Model instances to ["just work"](#example) once they are configured.
 
