@@ -288,18 +288,18 @@
     };
 
     /**
-     * Group together nest-related functions.
+     * Group together container-related functions.
      * TODO reword following paragraph:
-     * A 'nest' is a function which produces a container type to be set at a
+     * A 'container' is a function which produces a container type to be set at a
      * given Model or Collection attribute, according to the nestify
      * spec. It's intended to be a Backbone Model or Container
      * instance of some type, either a new instance or a modified
      * existing one; or even just a native JavaScript Object or Array
      */
-    var _nest = {
+    var _container = {
 
         /**
-         * Iterate through the list of specs; return the 'nest' fn of the
+         * Iterate through the list of specs; return the 'container' fn of the
          * first one that is a match for the indicated attribute.
          * @param specs compiled list of specs
          * @param attName String attribute name which may be specified
@@ -309,19 +309,19 @@
          * @param existing value at attribute 'attName'; possibly a
          * container of some sort
          * @param opts the usual opts to Backbone or this plugin
-         * @return the matched container nest function
+         * @return the matched container function
          */
-        findNestFn: function(specs, attName, val, existing, opts){
+        findContainerFn: function(specs, attName, val, existing, opts){
             var match = _.find(specs, function(spec){
                 return spec._matcherFn(attName, val, existing, opts);
             });
-            return match ? match._nestFn : _.bind(this.notSpecked, this);
+            return match ? match._containerFn : _.bind(this.notSpecked, this);
         },
 
         /**
-         * Returns a nest function which will produce a container for
+         * Returns a container function which will produce a container for
          * nesting.
-         * @param spec 'nest' spec: the part of the nestify spec which
+         * @param spec 'container' spec: the part of the nestify spec which
          * specifies how to produce a container for nesting.
          * @return a function which produces a container to be set for an
          * attribute. The function takes these args: 
@@ -331,15 +331,15 @@
          * 4. the String attribute name
          * 5. the Backbone Model
          */
-        makeNestFn: function(spec){
-            var nestFn;
+        makeContainerFn: function(spec){
+            var containerFn;
 
             if (_.isFunction(spec.fn)) {
-                nestFn = spec.fn;
+                containerFn = spec.fn;
             } else {
                 spec = _.isFunction(spec) ? {constructor:spec} : spec;
                 // Thunkify creation of new container; it may not be needed
-                nestFn = _.partial(this.specked, function(opts){
+                containerFn = _.partial(this.specked, function(opts){
                     var container = new spec.constructor(spec.args);
                     /* Here's where that undocumented flag gets detected. */
                     if (spec.spec === "recurse"){
@@ -351,7 +351,7 @@
                 });
             }
 
-            return nestFn;
+            return containerFn;
         },
 
         /**
@@ -453,8 +453,8 @@
         setAttributes = _.reduce(setAttributes, function(preppedAtts, v, k){
 
             var existing = (this.attributes && this.attributes[k]),
-                nestFn = _nest.findNestFn(spec, k, v, existing, opts);
-            preppedAtts[k] = nestFn(v, existing, opts, k, this);
+                containerFn = _container.findContainerFn(spec, k, v, existing, opts);
+            preppedAtts[k] = containerFn(v, existing, opts, k, this);
 
             return preppedAtts;
         }, {}, this);
@@ -465,11 +465,11 @@
 
     /**
      * Produces an internally optimized version of the spec.
-     * Currently: a list of matcher/nest function pairs. 
+     * Currently: a list of matcher/container function pairs. 
      * @param spec input to API
      * @param opts usual Backbone and/or Nestify options
      * @return array of objects containing two attributes:
-     * '_matcherFn' and '_nestFn'.
+     * '_matcherFn' and '_containerFn'.
      */
     var _compile = function(spec, opts){
 
@@ -486,7 +486,7 @@
 
         compiled = [{
             _matcherFn: _matchers.useUnmodified,
-            _nestFn: _.identity
+            _containerFn: _.identity
         }];
 
         compiled = _.reduce(specList, function(memo, specPiece){
@@ -495,14 +495,14 @@
                 _.each(specPiece.hash, function(v, k){
                     memo.push({
                         _matcherFn: _.partial(_matchers.stringMatcher, k),
-                        _nestFn: _nest.makeNestFn(v)
+                        _containerFn: _container.makeContainerFn(v)
                     });
                 });
 
             } else { 
 
                 var result = {
-                    _nestFn: _nest.makeNestFn(specPiece.nest)
+                    _containerFn: _container.makeContainerFn(specPiece.container)
                 };
 
                 if (_.isRegExp(specPiece.match)){
@@ -655,10 +655,10 @@
 
             var spec = [{
                 match: _matchers.isArray,
-                nest: C
+                container: C
             },{
                 match: _matchers.isObject,
-                nest: {
+                container: {
                     constructor: M,
                     spec: flag
                 }

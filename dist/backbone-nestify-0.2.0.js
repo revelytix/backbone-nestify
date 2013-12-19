@@ -1,4 +1,4 @@
-/* backbone-nestify 0.2.0 2013-12-18
+/* backbone-nestify 0.2.0 2013-12-19
  * http://revelytix.github.io/backbone-nestify/
  * Copyright 2013 Revelytix, Inc. All rights reserved. */
 /**
@@ -291,18 +291,18 @@
     };
 
     /**
-     * Group together nest-related functions.
+     * Group together container-related functions.
      * TODO reword following paragraph:
-     * A 'nest' is a function which produces a container type to be set at a
+     * A 'container' is a function which produces a container type to be set at a
      * given Model or Collection attribute, according to the nestify
      * spec. It's intended to be a Backbone Model or Container
      * instance of some type, either a new instance or a modified
      * existing one; or even just a native JavaScript Object or Array
      */
-    var _nest = {
+    var _container = {
 
         /**
-         * Iterate through the list of specs; return the 'nest' fn of the
+         * Iterate through the list of specs; return the 'container' fn of the
          * first one that is a match for the indicated attribute.
          * @param specs compiled list of specs
          * @param attName String attribute name which may be specified
@@ -312,19 +312,19 @@
          * @param existing value at attribute 'attName'; possibly a
          * container of some sort
          * @param opts the usual opts to Backbone or this plugin
-         * @return the matched container nest function
+         * @return the matched container function
          */
-        findNestFn: function(specs, attName, val, existing, opts){
+        findContainerFn: function(specs, attName, val, existing, opts){
             var match = _.find(specs, function(spec){
                 return spec._matcherFn(attName, val, existing, opts);
             });
-            return match ? match._nestFn : _.bind(this.notSpecked, this);
+            return match ? match._containerFn : _.bind(this.notSpecked, this);
         },
 
         /**
-         * Returns a nest function which will produce a container for
+         * Returns a container function which will produce a container for
          * nesting.
-         * @param spec 'nest' spec: the part of the nestify spec which
+         * @param spec 'container' spec: the part of the nestify spec which
          * specifies how to produce a container for nesting.
          * @return a function which produces a container to be set for an
          * attribute. The function takes these args: 
@@ -334,15 +334,15 @@
          * 4. the String attribute name
          * 5. the Backbone Model
          */
-        makeNestFn: function(spec){
-            var nestFn;
+        makeContainerFn: function(spec){
+            var containerFn;
 
             if (_.isFunction(spec.fn)) {
-                nestFn = spec.fn;
+                containerFn = spec.fn;
             } else {
                 spec = _.isFunction(spec) ? {constructor:spec} : spec;
                 // Thunkify creation of new container; it may not be needed
-                nestFn = _.partial(this.specked, function(opts){
+                containerFn = _.partial(this.specked, function(opts){
                     var container = new spec.constructor(spec.args);
                     /* Here's where that undocumented flag gets detected. */
                     if (spec.spec === "recurse"){
@@ -354,7 +354,7 @@
                 });
             }
 
-            return nestFn;
+            return containerFn;
         },
 
         /**
@@ -456,8 +456,8 @@
         setAttributes = _.reduce(setAttributes, function(preppedAtts, v, k){
 
             var existing = (this.attributes && this.attributes[k]),
-                nestFn = _nest.findNestFn(spec, k, v, existing, opts);
-            preppedAtts[k] = nestFn(v, existing, opts, k, this);
+                containerFn = _container.findContainerFn(spec, k, v, existing, opts);
+            preppedAtts[k] = containerFn(v, existing, opts, k, this);
 
             return preppedAtts;
         }, {}, this);
@@ -465,75 +465,70 @@
         return setAttributes;
     };
 
+
     /**
-     * Group compiler related things together
+     * Produces an internally optimized version of the spec.
+     * Currently: a list of matcher/container function pairs. 
+     * @param spec input to API
+     * @param opts usual Backbone and/or Nestify options
+     * @return array of objects containing two attributes:
+     * '_matcherFn' and '_containerFn'.
      */
-    var _compiler = {
+    var _compile = function(spec, opts){
 
-        /**
-         * Produces an internally optimized version of the spec.
-         * Currently: a list of matcher/nest function pairs. 
-         * @param spec input to API
-         * @param opts usual Backbone and/or Nestify options
-         * @return array of objects containing two attributes:
-         * '_matcherFn' and '_nestFn'.
-         */
-        compileSpec: function(spec, opts){
+        var specList, 
+            compiled;
 
-            var specList, 
-                compiled;
+        if (_.isArray(spec)){
+            specList = spec;
+        } else if (_.isObject(spec)){
+            specList = [{hash: spec}];
+        } else {
+            specList = [];
+        }
 
-            if (_.isArray(spec)){
-                specList = spec;
-            } else if (_.isObject(spec)){
-                specList = [{hash: spec}];
-            } else {
-                specList = [];
-            }
+        compiled = [{
+            _matcherFn: _matchers.useUnmodified,
+            _containerFn: _.identity
+        }];
 
-            compiled = [{
-                _matcherFn: _matchers.useUnmodified,
-                _nestFn: _.identity
-            }];
-
-            compiled = _.reduce(specList, function(memo, specPiece){
-                
-                if (specPiece.hash){
-                    _.each(specPiece.hash, function(v, k){
-                        memo.push({
-                            _matcherFn: _.partial(_matchers.stringMatcher, k),
-                            _nestFn: _nest.makeNestFn(v)
-                        });
+        compiled = _.reduce(specList, function(memo, specPiece){
+            
+            if (specPiece.hash){
+                _.each(specPiece.hash, function(v, k){
+                    memo.push({
+                        _matcherFn: _.partial(_matchers.stringMatcher, k),
+                        _containerFn: _container.makeContainerFn(v)
                     });
+                });
 
-                } else { 
+            } else { 
 
-                    var result = {
-                        _nestFn: _nest.makeNestFn(specPiece.nest)
-                    };
+                var result = {
+                    _containerFn: _container.makeContainerFn(specPiece.container)
+                };
 
-                    if (_.isRegExp(specPiece.match)){
-                        result._matcherFn = _.partial(_matchers.regexMatcher, specPiece.match);
-                    } else if (_.isString(specPiece.match)){
-                        result._matcherFn = _.partial(_matchers.stringMatcher, specPiece.match);
-                    } else if (_.isFunction(specPiece.match)){
-                        result._matcherFn = specPiece.match;
-                    } else {
-                        // no matcher specified means match all
-                        result._matcherFn = _matchers.matchAll;
-                    }
-
-                    memo.push(result);
+                if (_.isRegExp(specPiece.match)){
+                    result._matcherFn = _.partial(_matchers.regexMatcher, specPiece.match);
+                } else if (_.isString(specPiece.match)){
+                    result._matcherFn = _.partial(_matchers.stringMatcher, specPiece.match);
+                } else if (_.isFunction(specPiece.match)){
+                    result._matcherFn = specPiece.match;
+                } else {
+                    // no matcher specified means match all
+                    result._matcherFn = _matchers.matchAll;
                 }
 
+                memo.push(result);
+            }
 
-                return memo;
-            }, compiled);
 
-            // stash the compiled spec in the opts
-            opts.compiled = compiled;
-            return compiled;
-        }
+            return memo;
+        }, compiled);
+
+        // stash the compiled spec in the opts
+        opts.compiled = compiled;
+        return compiled;
     };
 
 
@@ -578,7 +573,7 @@
     var mixinFn = _.extend(function(spec, options){
 
         var _moduleOpts = _.extend({}, _defaultOpts, options),
-            _prepAtts = _.partial(_prepAttributes, _compiler.compileSpec(spec, _moduleOpts));
+            _prepAtts = _.partial(_prepAttributes, _compile(spec, _moduleOpts));
 
         return {
             /**
@@ -663,10 +658,10 @@
 
             var spec = [{
                 match: _matchers.isArray,
-                nest: C
+                container: C
             },{
                 match: _matchers.isObject,
-                nest: {
+                container: {
                     constructor: M,
                     spec: flag
                 }
@@ -678,11 +673,11 @@
             _.extend(M.prototype, compiled);
 
             return compiled;
-        }
-    });
+        },
 
-    // for testing purposes
-    mixinFn.pathToObject = _toObj;
+        // for testing purposes TODO
+        pathToObject: _toObj
+    });
 
     return mixinFn;
 }));

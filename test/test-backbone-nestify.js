@@ -1064,7 +1064,7 @@
                     expect(model.get("order|backordered")).to.equal("2113-11-29");
                 });
 
-                it('can contain an arbitrary nest function', function(){
+                it('can contain an arbitrary container function', function(){
                     var o = new env.Order();
                     var spec = nestify({
                         'order': {
@@ -1095,10 +1095,10 @@
             /**
              * For advanced specification...
              *
-             * The spec can be thought of as a list of matcher/nest
+             * The spec can be thought of as a list of matcher/container
              * pairs. The simple object hash is, in effect, a list of
              * String attribute names (matched with '===') paired with
-             * nests.
+             * containers.
              */
             describe('expanded spec list syntax', function(){
 
@@ -1132,7 +1132,7 @@
 
                     var spec = nestify([{
                         match: /ord/,
-                        nest: env.Order
+                        container: env.Order
                     }], {delim:"."});
                     var model = _.extend(new Backbone.Model(), spec);
                     model.set({
@@ -1153,7 +1153,7 @@
 
                     var spec = nestify([{
                         match: "ord",
-                        nest: env.Order
+                        container: env.Order
                     }], {delim:"."});
                     var model = _.extend(new Backbone.Model(), spec);
                     model.set({
@@ -1173,7 +1173,7 @@
                         match: function(attr, val, existing, opts){
                             return attr.length === opts.matchForLength;
                         },
-                        nest: Backbone.Model
+                        container: Backbone.Model
                     }], {delim:".",
                          matchForLength:3});
 
@@ -1200,7 +1200,7 @@
                 it('omitted "matcher" means match all', function(){
 
                     var spec = nestify([{
-                        nest: Backbone.Model
+                        container: Backbone.Model
                     }], {delim:"."});
                     var model = _.extend(new Backbone.Model(), spec);
                     model.set({
@@ -1296,13 +1296,13 @@
                        bar: BarModel}
             },{
                 match: /abc/,
-                nest: BarModel
+                container: BarModel
             },{
                 match: function(){return true;},
-                nest: BarModel
+                container: BarModel
             },{
                 // default case, no 'matcher'
-                nest: {
+                container: {
                     constructor: BazModel,
                     args: {argle:"bargle"}
                 }
@@ -1342,6 +1342,7 @@
          * -option to allow overwriting existing containers 
          * -convenience alternatives to nestify Models/Collections constructors or instances
          * -provide convenience matchers, namespaced
+         * -container 'args': 'apply' so it can be a list of args
          *
          * FEATURES
          * -events of nested models
@@ -1356,7 +1357,7 @@
          *
          * DOCUMENTATION
          * -container: attribute value which can hold nested attributes
-         * --one of: Model, Collection, Array, Object
+         * --one of: Model, Collection, Array, Object, Function?
          * --any of these are indexable by nestify syntax
          * --merging containers policy?
          * -API
@@ -1367,7 +1368,7 @@
          * -caching/memoizing (if need be, and document)
          *  -caching might need to be disabled if user wants side-effecty matcher functions
          * -type of container can be inferred up front in all cases
-         *  except a 'nest' function, since it's a black box until run time.
+         *  except a 'container' function, since it's a black box until run time.
          */
     });
 }));
