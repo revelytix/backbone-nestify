@@ -5,7 +5,6 @@ Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Ba
 ## Download
 * [0.2.0 release](dist/backbone-nestify-0.2.0.min.js?raw=true) - minified, 4kb
 * [0.2.0 release](dist/backbone-nestify-0.2.0.js?raw=true) - 23 kb
-* [latest snapshot](dist/backbone-nestify-0.3.0.js?raw=true)
 
 ## Features
 
