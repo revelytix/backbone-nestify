@@ -2,7 +2,13 @@
 
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Backbone [Models](http://backbonejs.org/#Model) and [Collections](http://backbonejs.org/#Collection). It depends only on Backbone and [Underscore](http://underscorejs.org/). 
 
-It provides two features:
+## Download
+* [Development](dist/backbone-nestify-0.2.0.js?raw=true) - 23 kb
+* [Production](dist/backbone-nestify-0.2.0.min.js?raw=true) - minified, 4kb
+
+## Features
+
+Backbone Nestify provides two features:
 
 * A syntax to more easily nest, and access, attributes within nested Models and Collections.
 
@@ -26,8 +32,6 @@ var mixin = nestify(spec);
 
 var ShoppingCartModel = Backbone.Model.extend(mixin);
 ```
-
-### Usage
 
 At it's most basic: you provide nestify with a spec and receive a mixin. 
 
@@ -435,6 +439,8 @@ The matcher can be omitted entirely; this means "match all attributes".
 ### Container
 
 Conceptually speaking, a **container** is anything that can hold a nested value. It is a Model attribute which Nestify can use to nest attributes. It can be any of: `Backbone Model`, `Backbone Collection`, `Function`, `Array`, `Object`.
+
+All containers can be indexed using the [getter/setter syntax](#nestify-gettersetter-syntax).
 
 #### Array or Object
 

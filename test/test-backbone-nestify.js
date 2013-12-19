@@ -1337,7 +1337,7 @@
          * TODO
          *
          * API
-         * -auto-nest into Backbone Models/Collections
+         * -auto-nest needs work
          * -nestify an existing instance
          * -option to allow overwriting existing containers 
          * -convenience alternatives to nestify Models/Collections constructors or instances
@@ -1353,16 +1353,15 @@
          * -probably shouldn't allow Backbone.Model or
          *  Backbone.Collection constructors themselves to be modified
          * -nestify delegates directly to Backbone.Model.prototype getter/setter
-         * -bug Jon reported
          *
          * DOCUMENTATION
          * -container: attribute value which can hold nested attributes
          * --one of: Model, Collection, Array, Object, Function?
          * --any of these are indexable by nestify syntax
          * --merging containers policy?
-         * -API
-         * -advanced spec
-         * -all 0.2.0 changes
+         *
+         * DIST
+         * -source map
          *
          * OPTIMIZATIONS
          * -caching/memoizing (if need be, and document)
