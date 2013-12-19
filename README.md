@@ -3,8 +3,8 @@
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Backbone [Models](http://backbonejs.org/#Model) and [Collections](http://backbonejs.org/#Collection). It depends only on Backbone and [Underscore](http://underscorejs.org/). 
 
 ## Download
-* [Development](dist/backbone-nestify-0.2.0.js?raw=true) - 23 kb
-* [Production](dist/backbone-nestify-0.2.0.min.js?raw=true) - minified, 4kb
+* [0.2.0 release](dist/backbone-nestify-0.2.0.min.js?raw=true) - minified, 4kb
+* [0.2.0 release](dist/backbone-nestify-0.2.0.js?raw=true) - 23 kb
 
 ## Features
 
