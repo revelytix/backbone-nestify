@@ -279,6 +279,7 @@ shoppingCart.get("pending.items.0.itemID", {delim:"."});
 ### coll
 
 The `coll` option gives fine-grained control over the updating of nested Backbone Collections. The possible values are `reset`, `set`, and the default value `at`. 
+
 * reset - a nested Collection is updated using its [reset](http://backbonejs.org/#Collection-reset) method, which completely replaces its contents.
 * set - a nested Collection is updated using its [set](http://backbonejs.org/#Collection-set) method, which performs a Backbone "smart" update. (See [documentation](http://backbonejs.org/#Collection-set) for additional Backbone options that can be paired with this one.)
 * at - the default and most precise behavior: a nested Collections values are overwritten individually, in place by index, via it's [at](http://backbonejs.org/#Collection-at) method.
@@ -559,6 +560,7 @@ _.keys(mixin); // ["get","set"]
 I'll be honest here: like countless software developers before us, we identified a problem and, not knowing much about it yet, assumed it would be easy to fix by ourselves. Nesting attributes within Backbone Models is apparently a popular enough need that it merits its own [FAQ](http://backbonejs.org/#FAQ-nested). We evaluated some of the existing plugins but decided for various reasons to try our own approach, which eventually became this plugin.
 
 Having said all of that, we believe Nestify fills a couple of really sweet spots:
+
 * It is [mixin-based](#applying-the-mixin) rather than Class based. That is, your Models do not have to extend a particular Model superclass in order to use the plugin. Instead, the plugin produces a mixin object which can be added to any existing Model or Collection definition, or even just a single instance of a type of Model or Collection.
 * a [simple but flexible getter/setter syntax](#nestify-getter-setter-syntax).
 * Nestify was designed especially to make serialization to and from JSON work seamlessly. In our case, we have a RESTful API returning potentially complicated and deeply-nested responses, and we want our Model instances to ["just work"](#example) once they are configured.
