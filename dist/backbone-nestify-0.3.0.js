@@ -1,4 +1,4 @@
-/* backbone-nestify 0.2.0 2013-12-19
+/* backbone-nestify 0.3.0 2013-12-19
  * http://revelytix.github.io/backbone-nestify/
  * Copyright 2013 Revelytix, Inc. All rights reserved. */
 /**
