@@ -252,7 +252,7 @@ Nestifying is not confined to the top-level Model only. The nested Model and Col
 
 ## Options
 
-Nestify options, like Backbone options, are a simple hash of name/value pairs. They can be specified by either of the following ways:
+Nestify options, like Backbone options, are a simple hash of name/value pairs. They can be specified by either of the following means:
 
 * When calling nestify(), pass an options hash as a second (optional) parameter. These options are in effect for the lifetime of the mixin.
 
@@ -354,7 +354,7 @@ The general spec form has the following structure (in pseudo-BNF):
                 | RegExp
                 | Function  // predicate
 
-<container>   ::= <Constructor>
+<container>   ::= <constructor>
                 | {constructor: <constructor>,
                    args       : <arguments to constructor>, // optional 
                    spec       : <speclist>                  // optional
@@ -376,7 +376,7 @@ var spec = [{hash: {account: AccountModel,
 
 // equivalent to abbreviated form:
 var spec = {account: AccountModel,
-            orders: OrdersCollection}}
+            orders: OrdersCollection}};
 ```
 
 A hash can be thought of as the degenerate form of the more general, more powerful pairing of **matchers** and a **containers**.
@@ -408,7 +408,7 @@ A JavaScript RegExp can be used as a matcher for more powerful attribute matchin
 
 #### Function
 
-For maximum matching capability, a JavaScript Function can be used.
+For maximum matching capability, a JavaScript predicate Function can be used.
 
 ```javascript
 var len=3;
@@ -420,12 +420,14 @@ var len=3;
  container: OrderModel}
 ```
 
-The supplied matcher function will be passed these parameters: 
+The supplied predicate will be passed these parameters: 
 
 * The String `attribute` name
 * The incoming, unmodified container `value` to be set
 * The `existing` container, if any
 * The `opts` hash
+
+It should return true or false.
 
 #### Omitted
 
@@ -440,7 +442,7 @@ The matcher can be omitted entirely; this means "match all attributes".
 
 Conceptually speaking, a **container** is anything that can hold a nested value. It is a Model attribute which Nestify can use to nest attributes. It can be any of: `Backbone Model`, `Backbone Collection`, `Function`, `Array`, `Object`.
 
-All containers can be indexed using the [getter/setter syntax](#nestify-gettersetter-syntax).
+All containers can be indexed using the [getter/setter syntax](#nestify-getter-setter-syntax).
 
 #### Array or Object
 
@@ -516,28 +518,28 @@ var spec = [{match: "account",
 
 ### Example
 
-A full-blown example of the Advanced Spec Form:
+An example of the Advanced Spec Form:
 
 ```javascript
-    nestify([{
-        hash: {foo: FooModel,
-               bar: BarModel}
-    },{
-        match: /abc/,
-        container: BarModel
-    },{
-        match: function(...){return true;},
-        container: function(...){return something;}
-    },{
-        // default case, no 'matcher'
-        container: {
-            constructor: BazModel,
-            args: {argle:"bargle"},
-            spec: [...BazModel's own spec...]
-        }
-    }],{ // optional 'opts' arg
-        delim: "."
-    });
+nestify([{
+    hash: {foo: FooModel,
+           bar: BarModel}
+},{
+    match: /abc/,
+    container: BarModel
+},{
+    match: function(...){return true;},
+    container: function(...){return something;}
+},{
+    // default case, no 'matcher'
+    container: {
+        constructor: BazModel,
+        args: {argle:"bargle"},
+        spec: [...BazModel's own spec...]
+    }
+}],{ // optional 'opts' arg
+    delim: "."
+});
 ```
 
 ## Under the Hood
@@ -552,9 +554,14 @@ var mixin = nestify({
 _.keys(mixin); // ["get","set"]
 ```
 
-## Useful If
+## Why?
 
-If you are constrained to an API which uses deeply nested trees of entities, which can perhaps be composed and reused in different combinations, then this plugin may help you to work with a corresponding set of custom Backbone Models and Collections. The plugin was designed especially to make serialization to and from JSON work seamlessly, as well as providing the convenience syntax for working with nested Model or Collection attributes.
+I'll be honest here: like countless software developers before us, we identified a problem and, not knowing much about it yet, assumed it would be easy to fix by ourselves. Nesting attributes within Backbone Models is apparently a popular enough need that it merits its own [FAQ](http://backbonejs.org/#FAQ-nested). We evaluated some of the existing plugins but decided for various reasons to try our own approach, which eventually became this plugin.
+
+Having said all of that, we believe Nestify fills a couple of really sweet spots:
+* It is [mixin-based](#applying-the-mixin) rather than Class based. That is, your Models do not have to extend a particular Model superclass in order to use the plugin. Instead, the plugin produces a mixin object which can be added to any existing Model or Collection definition, or even just a single instance of a type of Model or Collection.
+* a [simple but flexible getter/setter syntax](#nestify-getter-setter-syntax).
+* Nestify was designed especially to make serialization to and from JSON work seamlessly. In our case, we have a RESTful API returning potentially complicated and deeply-nested responses, and we want our Model instances to ["just work"](#example) once they are configured.
 
 ## Development
 
