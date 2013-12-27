@@ -221,7 +221,6 @@ cart.set("pending|id", 5);
 cart.get("pending"); // returns an Order instance with an 'id' of 5
 ```
 
-
 ### Applying the Mixin
 
 The mixin, once produced, can be added to a Backbone Model or Collection definition or instance using any of the ordinary means provided by Backbone. It can be included in the Model definition like so:
@@ -276,50 +275,120 @@ shoppingCart.get("pending|items|0|itemID");
 shoppingCart.get("pending.items.0.itemID", {delim:"."});
 ```
 
-### coll
+### update
 
-The `coll` option gives fine-grained control over the updating of nested Backbone Collections. The possible values are `reset`, `set`, and the default value `at`. 
+The `update` option gives fine-grained control over the updating of Nestify [containers](#containers). The possible values are `reset`, `merge`, and `smart`. 
 
-* reset - a nested Collection is updated using its [reset](http://backbonejs.org/#Collection-reset) method, which completely replaces its contents.
-* set - a nested Collection is updated using its [set](http://backbonejs.org/#Collection-set) method, which performs a Backbone "smart" update. (See [documentation](http://backbonejs.org/#Collection-set) for additional Backbone options that can be paired with this one.)
-* at - the default and most precise behavior: a nested Collections values are overwritten individually, in place by index, via it's [at](http://backbonejs.org/#Collection-at) method.
+* `reset` - the contents of a container is completely replaced
+* `merge` - new values are merged into a container's current values
+* `smart` - new values are "smart"-merged into a container's current values. 
 
-This option is best illustrated by an example. To see it in action, let's say the items of an existing order are being updated.
-
+Each option has slightly different implications for each different [type of container](#containers). It is best illustrated with examples; let's start with an existing order.
 ```javascript
 var order = new Order({items:[{id:1,desc:"bread"}, 
                               {id:2,desc:"cheese"}]});
 ```
+Each following section contains an example which updates this order.
 
 #### reset
 
-Resetting the Items...
+Containers' contents are replaced completely:
+
+* `Collection` - updated using [reset](http://backbonejs.org/#Collection-reset), which completely replaces its contents.
+* `Model` - [cleared](http://backbonejs.org/#Model-clear), then updated using [set](http://backbonejs.org/#Model-set)
+* `Array` - _default behavior_ - any existing Array is replaced by the new Array
+* `Object` - _default behavior_ - any existing Object is replaced by the new Object
+
+Example: resetting the Items Collection...
 ```javascript
-order.set({items:[{id:3,desc:"butter"}]}, {coll:"reset"});
+order.set({items:[{id:3,desc:"butter"}]}, {update:"reset"});
 ```
 ...results in the order now having a single 'butter' Item.
 
-#### set
+#### merge
 
-Setting the Items and taking advantage of Backbone's `{remove:false}` option...
+The most precise behavior: container attributes are updated by index for Array-like containers, and by attribute-name for Object-like containers.
+
+* `Collection` - _default behavior_ - values are overwritten individually, in place, by index (see [at](http://backbonejs.org/#Collection-at) method)
+* `Model` - _default behavior_ - updated using [set](http://backbonejs.org/#Model-set)
+* `Array` - updated by numerical index
+* `Object` - updated by String attribute name
+
+Example: updating the Items Collection...
 ```javascript
-order.set({items:[{id:3,desc:"butter"}]}, {coll:"set", remove:false});
-```
-...will do a Collection smart merge, resulting in the order now having all three Items.
-
-#### at
-
-Updating the Items with `{coll:'at'}`...
-```javascript
-order.set({items:[{id:3,desc:"butter"}]}, {coll:"at"});
+order.set({items:[{id:3,desc:"butter"}]}, {update:"merge"});
 ```
 ...will replace the first Item in the Collection (bread) with a new first Item (butter). The second item could be replaced instead (note the `null` in the array):
 ```javascript
-order.set({items:[null,{id:3,desc:"butter"}]}, {coll:"at"});
+order.set({items:[null,{id:3,desc:"butter"}]}, {update:"merge"});
 ```
 ...which would be equivalent to using the nestify syntax:
 ```javascript
 order.set("items|1|", {id:3,desc:"butter"});
+```
+
+#### smart
+
+Indicates a "smart" merge. For Collections, [a "smart" update is performed](http://backbonejs.org/#Collection-set). For all other containers this option is the same as using [update:merge](#options/update/merge). See the section on [containers](#containers) for a full explanation.
+
+Behavior, by container type:
+
+* `Collection` - updated using its [set](http://backbonejs.org/#Collection-set) method, which performs a Backbone "smart" update. (See [documentation](http://backbonejs.org/#Collection-set) for additional Backbone options that can be paired with this one.)
+* `Model` - same as [merge](#options/update/merge)
+* `Array` - same as [merge](#options/update/merge)
+* `Object` - same as [merge](#options/update/merge)
+
+Example: setting the Items and taking advantage of Backbone's `{remove:false}` option...
+```javascript
+order.set({items:[{id:3,desc:"butter"}]}, {update:"smart", remove:false});
+```
+...will do a Collection smart merge, resulting in the order now having all three Items.
+
+## Containers
+
+Conceptually speaking, a **container** is anything that can hold a nested value. It is a Model attribute which Nestify can use to nest attributes. A container can be any of: 
+
+* a `Backbone Model`
+* a `Backbone Collection`
+* a plain `Array`
+* a plain `Object`
+
+All containers can be indexed using the [getter/setter syntax](#nestify-getter-setter-syntax). Notice that two of these container types are `Array`-like: `Collections` and `Arrays`. They both are indexed by integer numbers. Similarly, the other two container types are `Object`-like: `Models` and `Objects`. They both are indexed by String attribute names.
+
+Controlling the updating of a Model's nested containers is fundamental to Nestify. Nestify provides the [update](#options/update) option to control the updating of container instances. Nestify also allows this update policy to be set on a container-by-container basis using [advanced container specification](#advanced-spec/container). Finally, Nestify assumes reasonable defaults for each type of container:
+
+* `Collection` - default update behavior is [merge](#options/update/merge)
+* `Model` - default update behavior is [merge](#options/update/merge)
+* `Array` - default update behavior is [reset](#options/update/reset) (same as unmodified Backbone)
+* `Object` - default update behavior is [reset](#options/update/reset) (same as unmodified Backbone)
+
+### Array or Object
+
+Backbone itself already allows simple nesting via native JavaScript Arrays and Objects; Nestify simply provides its [getter/setter](#nestify-getter-setter-syntax) syntactic sugar on top of this. In fact, using an empty spec such as this:
+
+```javascript
+var Model = Backbone.Model.extend(nestify());
+```
+
+...will still nestify the Model and allow the use of Nestify's getter/setter syntax. It simply will not change the storage of those nested attributes; they will continue to be stored in plain Objects or Arrays.
+
+```javascript
+var m = new Model({
+    orders: [{id: 1}]
+});
+
+m.get("orders|0|id"); //returns 1
+m.get("orders|0");    //returns an Object
+m.get("orders");      //returns an Array
+```
+
+### Model or Collection
+
+Specifying that a container should be a Backbone Model or Collection is the expected majority use case.
+
+```javascript
+var spec = {account: AccountModel,
+            orders: OrdersCollection}}
 ```
 
 ## Advanced Spec
@@ -334,7 +403,6 @@ var shoppingCartSpec = {
 ```
 
 But it is possible to opt-in to a more verbose but powerful _general_ spec form.
-
 
 ### General Form
 
@@ -364,7 +432,6 @@ The general spec form has the following structure (in pseudo-BNF):
 <constructor> ::= <Backbone Model constructor Function> 
                 | <Backbone Collection constructor Function>
 ```
-
 
 ### Hash
 
@@ -441,34 +508,30 @@ The matcher can be omitted entirely; this means "match all attributes".
 
 ### Container
 
-Conceptually speaking, a **container** is anything that can hold a nested value. It is a Model attribute which Nestify can use to nest attributes. It can be any of: `Backbone Model`, `Backbone Collection`, `Function`, `Array`, `Object`.
+The [basics of containers](#containers) have already been covered. The general spec form introduces a new concept, a **constructor**, which provides more flexibility in generating new container values.
 
-All containers can be indexed using the [getter/setter syntax](#nestify-getter-setter-syntax).
+### Constructor
 
-#### Array or Object
+A **constructor** is a JavaScript function which produces a container value. A constructor function can be any container constructor function or a custom (non-constructor) function.
 
-Backbone itself already allows simple nesting via native JavaScript Arrays and Objects; Nestify simply provides its getter/setter syntactic sugar on top of this. In fact, using an empty spec such as this:
+So far, examples have only shown an _implied_ constructor value by pairing the `container` attribute with a Backbone Model or Collection constructor:
 
 ```javascript
-var Model = Backbone.Model.extend(nestify());
+{orders: OrdersCollection}
 ```
 
-...will still nestify the Model and allow the use of Nestify's getter/setter syntax. It simply will not change the storage of those nested attributes; they will continue to be stored in plain Objects or Arrays.
+This is equivalent to the general form, which makes explicit the constructor:
 
 ```javascript
-var m = new Model({
-    orders: [{id: 1}]
-});
-
-m.get("orders|0|id"); //returns 1
-m.get("orders|0");    //returns an Object
-m.get("orders");      //returns an Array
-
+{match: 'orders', 
+ container: 
+ {constructor: OrdersCollection}
+}
 ```
 
 #### Model or Collection
 
-Specifying that a container should be a Backbone Model or Collection is the expected majority use case; just use the constructor Function, like so:
+Specifying that a container should be a Backbone Model or Collection is the expected majority use case; just use their constructor functions, like so:
 
 ```javascript
 var spec = [{match: "account",
@@ -485,7 +548,7 @@ var spec = {account: AccountModel,
 
 ```
 
-Specifying arguments to the Backbone constructor, and/or specifying a Nestify spec for instances of that Backbone container, can be accomplished like this:
+Specifying arguments to the Backbone constructor, and/or specifying a Nestify spec for instances of that Backbone container, can be accomplished using the `constructor` attribute:
 
 ```javascript
 var spec = [{match: "account",
@@ -497,7 +560,7 @@ var spec = [{match: "account",
 
 #### Function
 
-For utmost flexibility, a `container` can be a Function. 
+For utmost flexibility, a constructor can be a custom function.
 
 The supplied function will be passed five parameters: 
 
@@ -507,7 +570,7 @@ The supplied function will be passed five parameters:
 * The String `attribute` name
 * The containing Backbone `Model`
 
-The function should return the resulting `container` object.
+The function should return the resulting container object.
 
 ```javascript
 var spec = [{match: "account",
@@ -516,6 +579,8 @@ var spec = [{match: "account",
              }
             }];
 ```
+
+The function will _not_ be invoked using the `new` keyword.
 
 ### Example
 
