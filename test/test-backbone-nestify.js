@@ -516,233 +516,311 @@
             });
         });
 
-        describe('uninitialized nested collection', function(){
-            it("should dynamically construct instance of the spec'd model", function(){
-                var acct = new env.Account();
-                acct.set("orders|2|spicy", "meatball");
-                var b = acct.get("orders|2");
-                expect(b).to.be.an.instanceof(env.Order);
-                expect(b.get("spicy")).to.equal("meatball");
-            });
-        });
-
-        describe("nesting non-spec'd attributes", function(){
-
-            /*
-             * Nested attributes that are not spec'd as having a Model
-             * or Collection constructor can still be gotten and set
-             * using the custom nested getter/setter syntax.
-             */
-
-            it('should nest primitives', function(){
-                var order = new env.Order();
-                order.set("something|spicy", "meatball");
-                expect(order.get("something|spicy")).to.equal("meatball");
-            });
-
-            it('should nest primitive into an array', function(){
-                var order = new env.Order();
-                order.set("something|2|spicy", "meatball");
-                expect(order.get("something|2|spicy")).to.equal("meatball");
-            });
-
-            it('should make array rather than Collection, obj rather than Model', function(){
-                var order = new env.Order();
-                order.set("something|2|spicy", "meatball");
-                expect(order.get("something")).to.not.be.an.instanceof(Backbone.Collection);
-                expect(order.get("something")).to.be.an.instanceof(Array);
-                expect(order.get("something|2")).to.not.be.an.instanceof(Backbone.Model);
-                expect(order.get("something|2")).to.not.be.an.instanceof(Array);
-                expect(order.get("something|2")).to.be.an.instanceof(Object);
-                expect(order.get("something|2|spicy")).to.equal("meatball");
-                expect(order.get("something")).to.deep.equal([, , {spicy:"meatball"}]);
-            });
-
-            it('should fill array sparsely if necessary', function(){
-                var order = new env.Order();
-                order.set(["something", 0], "snuh");
-                order.set(["something", 2], "blammo");
-                var b = order.get("something");
-                expect(b).to.be.an.instanceof(Array);
-                expect(b[0]).to.equal("snuh");
-                expect(b[1]).to.be.undefined;
-                expect(b[2]).to.equal("blammo");
-            });
-
-            it('should set objects nested', function(){
-                var order = new env.Order();
-                order.set(["something", "aak"], "snuh");
-                order.set(["something", "oop"], "blammo");
-                var b = order.get("something");
-                expect(b).to.be.an.instanceof(Object);
-                expect(b.aak).to.equal("snuh");
-                expect(b.oop).to.equal("blammo");
-            });
+        describe('uninitialized nested container', function(){
 
             /**
              * Tests that a nested Model may be unitialized, as
              * long as its constructor is spec'd
              */
-            it("should create nested Model, if necessary, of spec'd type", function(){
-                var cart = new env.ShoppingCart();
-                cart.set(["account", "something"], 4);
-                var acct = cart.get("account");
-                expect(acct).to.not.be.undefined;
-                expect(acct.get("something")).to.equal(4);
-                expect(acct).to.be.an.instanceof(env.Account);
-                expect(acct.constructor).to.equal(env.Account);
+            it("should dynamically construct instance of the spec'd model", function(){
+                var acct = new env.Account();
+                acct.set("orders|2|spicy", "meatball");
+                var b = acct.get("orders|2");
+                expect(b).to.be.an.instanceof(env.Order);
+                expect(b.constructor).to.equal(env.Order);
+                expect(b.get("spicy")).to.equal("meatball");
             });
+        });
 
-            it('should replace objects (no mixin)', function(){
-                var order = new Backbone.Model();
-                order.set({item: {id: 1,
-                                  desc:"laptop",
-                                  count: 1}});
-                order.set({item: {id: 1,
-                                  size:"large",
-                                  count:2}});
-                expect(order.get("item")).to.deep.equal({
-                    id: 1,
-                    size:"large",
-                    count:2
+        /**
+         * A 'container' is any of:
+         * (*) Backbone Model
+         * (*) Backbone Collection
+         * (*) plain Array
+         * (*) plain Object
+         * (*) Function
+         * 
+         * Their updating can be controlled
+         */
+        describe('containers', function(){
+
+            /*
+             * Nested container attributes that are not spec'd as having a Model
+             * or Collection constructor can still be gotten and set
+             * using the custom nested getter/setter syntax. In that
+             * case, Nestify will use plain Java Arrays and/or Objects
+             * as nested containers.
+             */
+            describe("nesting primitive, non-spec'd containers", function(){
+
+                it('should nest primitives', function(){
+                    var order = new env.Order();
+                    order.set("something|spicy", "meatball");
+                    expect(order.get("something|spicy")).to.equal("meatball");
                 });
-            });
 
-            it('should overlay objects?', function(){
-                var order = _.extend(new Backbone.Model(), nestify());
-                order.set({item: {id: 1,
-                                  desc:"laptop",
-                                  count: 1}});
-                order.set({item: {id: 1,
-                                  size:"large",
-                                  count:2}});
-                expect(order.get("item")).to.deep.equal({
-                    id: 1,
-                    desc:"laptop",
-                    size:"large",
-                    count:2
+                it('should nest primitive into an array', function(){
+                    var order = new env.Order();
+                    order.set("something|2|spicy", "meatball");
+                    expect(order.get("something|2|spicy")).to.equal("meatball");
                 });
-            });
 
-            it('should overlay objects?', function(){
-                var order = _.extend(new Backbone.Model(), nestify());
-                order.set({item: {id: 1,
-                                  desc:"laptop",
-                                  count: 1}});
-                order.set("item|id", 1);
-                order.set("item|size", "large");
-                order.set("item|count", 2);
-                
-                expect(order.get("item")).to.deep.equal({
-                    id: 1,
-                    desc:"laptop",
-                    size:"large",
-                    count:2
+                it('should make array rather than Collection, obj rather than Model', function(){
+                    var order = new env.Order();
+                    order.set("something|2|spicy", "meatball");
+                    expect(order.get("something")).to.not.be.an.instanceof(Backbone.Collection);
+                    expect(order.get("something")).to.be.an.instanceof(Array);
+                    expect(order.get("something|2")).to.not.be.an.instanceof(Backbone.Model);
+                    expect(order.get("something|2")).to.not.be.an.instanceof(Array);
+                    expect(order.get("something|2")).to.be.an.instanceof(Object);
+                    expect(order.get("something|2|spicy")).to.equal("meatball");
+                    expect(order.get("something")).to.deep.equal([, , {spicy:"meatball"}]);
                 });
+
+                it('should fill array sparsely if necessary', function(){
+                    var order = new env.Order();
+                    order.set(["something", 0], "snuh");
+                    order.set(["something", 2], "blammo");
+                    var b = order.get("something");
+                    expect(b).to.be.an.instanceof(Array);
+                    expect(b[0]).to.equal("snuh");
+                    expect(b[1]).to.be.undefined;
+                    expect(b[2]).to.equal("blammo");
+                });
+
+                it('should set objects nested', function(){
+                    var order = new env.Order();
+                    order.set(["something", "aak"], "snuh");
+                    order.set(["something", "oop"], "blammo");
+                    var b = order.get("something");
+                    expect(b).to.be.an.instanceof(Object);
+                    expect(b.aak).to.equal("snuh");
+                    expect(b.oop).to.equal("blammo");
+                });
+
+                it('should replace objects (no mixin)', function(){
+                    var order = new Backbone.Model();
+                    order.set({item: {id: 1,
+                                      desc:"laptop",
+                                      count: 1}});
+                    order.set({item: {id: 1,
+                                      size:"large",
+                                      count:2}});
+                    expect(order.get("item")).to.deep.equal({
+                        id: 1,
+                        size:"large",
+                        count:2
+                    });
+                });
+
+                it('should overlay objects?', function(){
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    order.set({item: {id: 1,
+                                      desc:"laptop",
+                                      count: 1}});
+                    order.set({item: {id: 1,
+                                      size:"large",
+                                      count:2}});
+                    expect(order.get("item")).to.deep.equal({
+                        id: 1,
+                        desc:"laptop",
+                        size:"large",
+                        count:2
+                    });
+                });
+
+                it('should overlay objects?', function(){
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    order.set({item: {id: 1,
+                                      desc:"laptop",
+                                      count: 1}});
+                    order.set("item|id", 1);
+                    order.set("item|size", "large");
+                    order.set("item|count", 2);
+                    
+                    expect(order.get("item")).to.deep.equal({
+                        id: 1,
+                        desc:"laptop",
+                        size:"large",
+                        count:2
+                    });
+                });
+
+                it('should replace arrays (no mixin)', function(){
+                    var order = new Backbone.Model();
+                    order.set({items: [{
+                        id: 1,
+                        desc:"laptop",
+                        size: "med",
+                        count: 1
+                    }, {
+                        id: 2,
+                        desc:"celery",
+                        count: 1
+                    }]});
+                    order.set({items: [{
+                        id: 1,
+                        desc:"laptop",
+                        count: 2
+                    },null,{
+                        id: 3,
+                        desc:"broccoli",
+                        count: 2
+                    }]});
+                    expect(order.get("items")).to.deep.equal([{
+                        id: 1,
+                        desc:"laptop",
+                        count: 2
+                    }, null, {
+                        id: 3,
+                        desc:"broccoli",
+                        count: 2
+                    }]);
+                });
+
+                it('should overlay arrays?', function(){
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    order.set({items: [{
+                        id: 1,
+                        desc:"laptop",
+                        size: "med",
+                        count: 1
+                    }, {
+                        id: 2,
+                        desc:"celery",
+                        count: 1
+                    }]});
+                    order.set({items: [{
+                        id: 1,
+                        desc:"laptop",
+                        count: 2
+                    },null,{
+                        id: 3,
+                        desc:"broccoli",
+                        count: 2
+                    }]});
+                    expect(order.get("items")).to.deep.equal([{
+                        id: 1,
+                        desc:"laptop",
+                        // size: "med", //TODO ???
+                        count: 2
+                    }, {
+                        id: 2,
+                        desc:"celery",
+                        count: 1
+                    }, {
+                        id: 3,
+                        desc:"broccoli",
+                        count: 2
+                    }]);
+                });
+
+
+                it('should overlay arrays? also', function(){
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    order.set({items: [{
+                        id: 1,
+                        desc:"laptop",
+                        size: "med",
+                        count: 1
+                    }, {
+                        id: 2,
+                        desc:"celery",
+                        count: 1
+                    }]});
+
+                    order.set("items|0|count", 2);
+                    order.set("items|2|id", 3);
+                    order.set("items|2|count", 2);
+
+                    expect(order.get("items")).to.deep.equal([{
+                        id: 1,
+                        desc:"laptop",
+                        // size: "med", //TODO ???
+                        count: 2
+                    }, {
+                        id: 2,
+                        desc:"celery",
+                        count: 1
+                    }, {
+                        id: 3,
+                        count: 2
+                    }]);
+                });
+
+                it('should by default work just like Backbone', function(){
+
+                    var unDFynd;
+                    var set1 = {
+                        account: {
+                            id: "A",
+                            email: "a@hotmail.com"
+                        },
+                        items: [{
+                            id: 1,
+                            size: "med",
+                            count: 1
+                        }, {
+                            id: 2,
+                            desc:"celery",
+                            count: 1
+                        }]
+                    };
+                    var set2 = {
+                        account: {
+                            email: "a@geocities.com"
+                        },
+                        items: [unDFynd, {
+                            id: 3,
+                            desc:"broccoli",
+                            count: 2
+                        }, {
+                            id: 1,
+                            size: "med",
+                            count: 2
+                        }]
+                    };
+                    var expected = set2;
+
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    var order0 = new Backbone.Model();
+                    order.set(set1);
+                    order.set(set2);
+                    order0.set(set1);
+                    order0.set(set2);
+
+                    expect(order.attributes).to.deep.equal(expected);
+                    expect(order0.attributes).to.deep.equal(expected);
+                });
+
+                it('should by default work just like Backbone (simple)', function(){
+                    var set1 = {
+                        account: {
+                            id: "A",
+                            email: "a@hotmail.com"
+                        }
+                    };
+                    var set2 = {
+                        account: {
+                            email: "a@geocities.com"
+                        }
+                    };
+                    var expected = set2;
+
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    var order0 = new Backbone.Model();
+                    order.set(set1);
+                    order.set(set2);
+                    order0.set(set1);
+                    order0.set(set2);
+
+                    // expect(order.attributes).to.deep.equal(expected);
+                    expect(order0.attributes).to.deep.equal(expected);
+
+                });
+
             });
 
-            it('should replace arrays (no mixin)', function(){
-                var order = new Backbone.Model();
-                order.set({items: [{
-                    id: 1,
-                    desc:"laptop",
-                    size: "med",
-                    count: 1
-                }, {
-                    id: 2,
-                    desc:"celery",
-                    count: 1
-                }]});
-                order.set({items: [{
-                    id: 1,
-                    desc:"laptop",
-                    count: 2
-                },null,{
-                    id: 3,
-                    desc:"broccoli",
-                    count: 2
-                }]});
-                expect(order.get("items")).to.deep.equal([{
-                    id: 1,
-                    desc:"laptop",
-                    count: 2
-                }, null, {
-                    id: 3,
-                    desc:"broccoli",
-                    count: 2
-                }]);
-            });
-
-            it('should overlay arrays?', function(){
-                var order = _.extend(new Backbone.Model(), nestify());
-                order.set({items: [{
-                    id: 1,
-                    desc:"laptop",
-                    size: "med",
-                    count: 1
-                }, {
-                    id: 2,
-                    desc:"celery",
-                    count: 1
-                }]});
-                order.set({items: [{
-                    id: 1,
-                    desc:"laptop",
-                    count: 2
-                },null,{
-                    id: 3,
-                    desc:"broccoli",
-                    count: 2
-                }]});
-                expect(order.get("items")).to.deep.equal([{
-                    id: 1,
-                    desc:"laptop",
-                    // size: "med", //TODO ???
-                    count: 2
-                }, {
-                    id: 2,
-                    desc:"celery",
-                    count: 1
-                }, {
-                    id: 3,
-                    desc:"broccoli",
-                    count: 2
-                }]);
-            });
-
-/* TODO temporarily disabled until figured out
-            it('should overlay arrays? also', function(){
-                var order = _.extend(new Backbone.Model(), nestify());
-                order.set({items: [{
-                    id: 1,
-                    desc:"laptop",
-                    size: "med",
-                    count: 1
-                }, {
-                    id: 2,
-                    desc:"celery",
-                    count: 1
-                }]});
-
-                order.set("items|0|count", 2);
-                order.set("items|2|id", 3);
-                order.set("items|2|count", 2);
-
-                expect(order.get("items")).to.deep.equal([{
-                    id: 1,
-                    desc:"laptop",
-                    // size: "med", //TODO ???
-                    count: 2
-                }, {
-                    id: 2,
-                    desc:"celery",
-                    count: 1
-                }, {
-                    id: 3,
-                    count: 2
-                }]);
-            });
-*/
         });
 
         /**
@@ -1304,6 +1382,7 @@
                 // default case, no 'matcher'
                 container: {
                     constructor: BazModel,
+                    update: "merge", //"reset", "merge", "smart"
                     args: {argle:"bargle"}
                 }
             }],{ // optional 'opts' arg

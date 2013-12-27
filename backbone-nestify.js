@@ -196,7 +196,7 @@
          * @param opts (optional) options to the Model constructor
          * or Model 'set' method
          */
-        set: function(coll, atts, opts){
+        smartMerge: function(coll, atts, opts){
             _assertArray(atts);
             var Constructor = coll.model;
             coll.set(_.map(atts, function(att){
@@ -206,9 +206,8 @@
 
         /**
          * Default behavior, update nested collection index-based.
-         * (Doesn't really use 'at' function, currently.)
          */
-        setAt: function(coll, atts, opts){
+        merge: function(coll, atts, opts){
             _assertArray(atts);
             var Constructor = coll.model;
             var alist = _.zip(coll.models, atts);
@@ -285,6 +284,89 @@
         isObject: function(att, v){
             return _.isObject(v);
         }
+    };
+
+    var _updater = {
+
+        /**
+         * Returns a function which, given an existing container, will
+         * update it with the new container value. Selects the right
+         * updater based on container type and 'update' option.
+         * @param type (expected) of container
+         * @param existing container
+         * @param opts
+         * @return Function which takes two params: 
+         * (1) new, incoming raw attributes 
+         * (2) opts
+         * and which updates the existing container
+         */
+        getUpdaterFn: function(type, existing, opts){
+        },
+
+        mergeModel: function(existing, container){
+        },
+
+        mergeCollection: _collection.merge,
+
+        smartMergeCollection: _collection.smartMerge,
+
+        resetModel: function(existing, container){
+        },
+
+        resetCollection: _collection.reset,
+
+        specked: function(thunk, v, existing, options){
+            // Either reuse the nested container, if
+            // present, or realize the new nested instance from 
+            // the thunk.
+            var container = existing || thunk(options);
+
+            // TODO Backbone.Collection has a 'set' method in
+            // Backbone 1.0.0; just use 'reset' for now.
+            if (container.reset){// It's a Backbone.Collection
+                if (existing){
+                    switch (options.coll){
+                    case "reset":
+                        _collection.reset(container, v, options);
+                        break;
+                    case "set":
+                        _collection.set(container, v, options);
+                        break;
+                    case "at":
+                        /* jshint -W086 */
+                    default:
+                        _collection.setAt(container, v, options);
+                        break;
+                    }
+                } else {
+                    _collection.reset(container, v, options);
+                }
+            } else {// It's a Backbone.Model
+                container.set(v, options);
+            }
+
+            return container;
+        },
+
+        /**
+         * Overlay the contents of the new 'container' Object into the
+         * contents of the 'existing' Object.
+         */
+        mergeObject: function(existing, container){
+            return _.extend({}, existing, container);
+        },
+
+        /**
+         * Overlay the contents of the new 'container' array into the
+         * contents of the 'existing' array.
+         */
+        mergeArray: function(existing, container){
+            return _.map(_.zip(container, existing), _.compose(_.first, _.compact));
+        },
+
+        /** resetting an Object or Array => return the new container */
+        resetObject: _.identity,
+        resetArray: _.identity
     };
 
     /**
@@ -396,6 +478,8 @@
          * it. Otherwise return the new container;
          * DEPRECATED TODO remove
          */
+        notSpecked: _.identity
+/*
         notSpecked: function(container, existing){
             var newContainer = container;
             if (existing){
@@ -407,22 +491,7 @@
             } 
             return newContainer;
         },
-
-        /**
-         * Overlay the contents of the new 'container' Object into the
-         * contents of the 'existing' Object.
-         */
-        overlayObject: function(container, existing){
-            return _.extend({}, existing, container);
-        },
-
-        /**
-         * Overlay the contents of the new 'container' array into the
-         * contents of the 'existing' array.
-         */
-        overlayArray: function(container, existing){
-            return _.map(_.zip(container, existing), _.compose(_.first, _.compact));
-        }
+ */
     };
 
     /**
@@ -518,7 +587,6 @@
 
                 memo.push(result);
             }
-
 
             return memo;
         }, compiled);
