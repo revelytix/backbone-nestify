@@ -330,12 +330,12 @@
                         _collection.reset(container, v, options);
                         break;
                     case "set":
-                        _collection.set(container, v, options);
+                        _collection.smartMerge(container, v, options);
                         break;
                     case "at":
                         /* jshint -W086 */
                     default:
-                        _collection.setAt(container, v, options);
+                        _collection.merge(container, v, options);
                         break;
                     }
                 } else {
@@ -454,12 +454,12 @@
                         _collection.reset(container, v, options);
                         break;
                     case "set":
-                        _collection.set(container, v, options);
+                        _collection.smartMerge(container, v, options);
                         break;
                     case "at":
                         /* jshint -W086 */
                     default:
-                        _collection.setAt(container, v, options);
+                        _collection.merge(container, v, options);
                         break;
                     }
                 } else {
