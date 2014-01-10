@@ -538,9 +538,8 @@
          * (*) Backbone Collection
          * (*) plain Array
          * (*) plain Object
-         * (*) Function
          * 
-         * Their updating can be controlled
+         * Their updating can be controlled via options.
          */
         describe('containers', function(){
 
@@ -579,8 +578,8 @@
 
                 it('should fill array sparsely if necessary', function(){
                     var order = new env.Order();
-                    order.set(["something", 0], "snuh");
-                    order.set(["something", 2], "blammo");
+                    order.set(["something", 0], "snuh", {update:"merge"});
+                    order.set(["something", 2], "blammo", {update:"merge"});
                     var b = order.get("something");
                     expect(b).to.be.an.instanceof(Array);
                     expect(b[0]).to.equal("snuh");
@@ -613,7 +612,7 @@
                     });
                 });
 
-                it('should overlay objects?', function(){
+                it('should replace objects (mixin default)', function(){
                     var order = _.extend(new Backbone.Model(), nestify());
                     order.set({item: {id: 1,
                                       desc:"laptop",
@@ -623,14 +622,43 @@
                                       count:2}});
                     expect(order.get("item")).to.deep.equal({
                         id: 1,
+                        size:"large",
+                        count:2
+                    });
+                });
+
+                it('should replace objects (mixin default)', function(){
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    order.set({item: {id: 1,
+                                      desc:"laptop",
+                                      count: 1}});
+                    order.set("item|id", 1);
+                    order.set("item|size", "large");
+                    order.set("item|count", 2);
+                    
+                    expect(order.get("item")).to.deep.equal({
+                        count:2
+                    });
+                });
+
+                it('can overlay objects', function(){
+                    var order = _.extend(new Backbone.Model(), nestify());
+                    order.set({item: {id: 1,
+                                      desc:"laptop",
+                                      count: 1}}, {update:"merge"});
+                    order.set({item: {id: 1,
+                                      size:"large",
+                                      count:2}}, {update:"merge"});
+                    expect(order.get("item")).to.deep.equal({
+                        id: 1,
                         desc:"laptop",
                         size:"large",
                         count:2
                     });
                 });
 
-                it('should overlay objects?', function(){
-                    var order = _.extend(new Backbone.Model(), nestify());
+                it('can overlay objects', function(){
+                    var order = _.extend(new Backbone.Model(), nestify({}, {update:"merge"}));
                     order.set({item: {id: 1,
                                       desc:"laptop",
                                       count: 1}});
@@ -1146,7 +1174,7 @@
                     var o = new env.Order();
                     var spec = nestify({
                         'order': {
-                            fn: function(v, existing, opts){
+                            constructor: function(v, existing, opts){
                                 o.set(v, opts);
                                 return o;
                             }

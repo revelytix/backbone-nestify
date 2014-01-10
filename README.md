@@ -427,10 +427,12 @@ The general spec form has the following structure (in pseudo-BNF):
                 | {constructor: <constructor>,
                    args       : <arguments to constructor>, // optional 
                    spec       : <speclist>                  // optional
-                | Function // "arbitrary" container
 
-<constructor> ::= <Backbone Model constructor Function> 
-                | <Backbone Collection constructor Function>
+<constructor> ::= <Backbone Model constructor function> 
+                | <Backbone Collection constructor function>
+                | <Array constructor function>
+                | <Object constructor function>
+                | <arbitrary function>
 ```
 
 ### Hash
@@ -565,7 +567,6 @@ For utmost flexibility, a constructor can be a custom function.
 The supplied function will be passed five parameters: 
 
 * The incoming, unmodified container `value` to be set (for example, raw JSON)
-* The `existing` container, if any
 * The `opts` hash
 * The String `attribute` name
 * The containing Backbone `Model`
@@ -574,8 +575,18 @@ The function should return the resulting container object.
 
 ```javascript
 var spec = [{match: "account",
-             container: function(v, existing, opts, att, m){
+             container: function(v, opts, att, m){
                  return new AmazingModel(v, opts);
+             }
+            }];
+            
+// or...
+
+var spec = [{match: "account",
+             container: {
+                 constructor: function(v, opts, att, m){
+                     return new AmazingModel(v, opts);
+                 }
              }
             }];
 ```
@@ -595,7 +606,9 @@ nestify([{
     container: BarModel
 },{
     match: function(...){return true;},
-    container: function(...){return something;}
+    container: {
+        constructor: function(...){return something;}
+    }
 },{
     // default case, no 'matcher'
     container: {

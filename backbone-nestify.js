@@ -165,73 +165,6 @@
     };
 
     /**
-     * Group nested Collection-related functions together.
-     */
-    var _collection = {
-        /**
-         * Create new Models from the indicated Collection Model, and
-         * 'reset' them on the Collection
-         * @param coll Backbone.Collection which is to be reset with
-         * new models
-         * @param atts raw Object which is to be used to instantiate new
-         * Models to 'reset' to the Collection
-         * @param opts (optional) options to the Model constructor and
-         * Collection 'reset' method.
-         */
-        reset: function(coll, atts, opts){
-            _assertArray(atts);
-            var Constructor = coll.model;
-            coll.reset(_.map(atts, function(att){
-                return new Constructor(att, opts);
-            }), opts);
-        },
-
-        /**
-         * Create new Models from the indicated Collection Model, and
-         * intelligently merge them in to the Collection.
-         * @param coll Backbone.Collection which is to be merged with
-         * new models
-         * @param atts raw Object which is to be used to instantiate new
-         * Models to add to the Collection
-         * @param opts (optional) options to the Model constructor
-         * or Model 'set' method
-         */
-        smartMerge: function(coll, atts, opts){
-            _assertArray(atts);
-            var Constructor = coll.model;
-            coll.set(_.map(atts, function(att){
-                return new Constructor(att, opts);
-            }), opts);
-        },
-
-        /**
-         * Default behavior, update nested collection index-based.
-         */
-        merge: function(coll, atts, opts){
-            _assertArray(atts);
-            var Constructor = coll.model;
-            var alist = _.zip(coll.models, atts);
-            _.each(alist, function(pair, i){
-
-                var m = _.first(pair);
-                var att = _.last(pair);
-
-                if (att){
-                    if (!m){
-                        m = new Constructor(att, opts);
-                        /* Note that this may fill the models
-                         * array sparsely, perhaps unexpectedly. */
-                        coll.models[i] = m;
-                        coll.length = coll.models.length;
-                    } else {
-                        m.set(att, opts);
-                    }
-                }
-            });
-        }
-    };
-
-    /**
      * Matchers. Functions are predicates (return true or false) and
      * take the following parameters:
      * 1. the String attribute name
@@ -266,15 +199,17 @@
          * occurring.
          */
         useUnmodified: function(att, v, existing, opts){
-            return (v instanceof Backbone.Model ||
-                    v instanceof Backbone.Collection ||
+            return (this.isModel(att, v) ||
+                    this.isCollection(att, v) ||
                     (opts.unset && !existy(v)));
         },
 
         isModel: function(att, v){
+            return v instanceof Backbone.Model;
         },
 
         isCollection: function(att, v){
+            return v instanceof Backbone.Collection;
         },
 
         isArray: function(att, v){
@@ -285,100 +220,27 @@
             return _.isObject(v);
         }
     };
-
-    var _updater = {
-
-        /**
-         * Returns a function which, given an existing container, will
-         * update it with the new container value. Selects the right
-         * updater based on container type and 'update' option.
-         * @param type (expected) of container
-         * @param existing container
-         * @param opts
-         * @return Function which takes two params: 
-         * (1) new, incoming raw attributes 
-         * (2) opts
-         * and which updates the existing container
-         */
-        getUpdaterFn: function(type, existing, opts){
-        },
-
-        mergeModel: function(existing, container){
-        },
-
-        mergeCollection: _collection.merge,
-
-        smartMergeCollection: _collection.smartMerge,
-
-        resetModel: function(existing, container){
-        },
-
-        resetCollection: _collection.reset,
-
-        specked: function(thunk, v, existing, options){
-            // Either reuse the nested container, if
-            // present, or realize the new nested instance from 
-            // the thunk.
-            var container = existing || thunk(options);
-
-            // TODO Backbone.Collection has a 'set' method in
-            // Backbone 1.0.0; just use 'reset' for now.
-            if (container.reset){// It's a Backbone.Collection
-                if (existing){
-                    switch (options.coll){
-                    case "reset":
-                        _collection.reset(container, v, options);
-                        break;
-                    case "set":
-                        _collection.smartMerge(container, v, options);
-                        break;
-                    case "at":
-                        /* jshint -W086 */
-                    default:
-                        _collection.merge(container, v, options);
-                        break;
-                    }
-                } else {
-                    _collection.reset(container, v, options);
-                }
-            } else {// It's a Backbone.Model
-                container.set(v, options);
-            }
-
-            return container;
-        },
-
-        /**
-         * Overlay the contents of the new 'container' Object into the
-         * contents of the 'existing' Object.
-         */
-        mergeObject: function(existing, container){
-            return _.extend({}, existing, container);
-        },
-
-        /**
-         * Overlay the contents of the new 'container' array into the
-         * contents of the 'existing' array.
-         */
-        mergeArray: function(existing, container){
-            return _.map(_.zip(container, existing), _.compose(_.first, _.compact));
-        },
-
-        /** resetting an Object or Array => return the new container */
-        resetObject: _.identity,
-        resetArray: _.identity
-    };
+    _.bindAll(_matchers, "useUnmodified");
 
     /**
      * Group together container-related functions.
-     * TODO reword following paragraph:
-     * A 'container' is a function which produces a container type to be set at a
-     * given Model or Collection attribute, according to the nestify
-     * spec. It's intended to be a Backbone Model or Container
-     * instance of some type, either a new instance or a modified
-     * existing one; or even just a native JavaScript Object or Array
      */
     var _container = {
+
+        determineType: function(value){
+            
+            var result;
+            if (value instanceof Backbone.Model) {
+                result = "model";
+            } else if (value instanceof Backbone.Collection) {
+                result = "collection";
+            } else if (_.isArray(value)) {
+                result = "array";
+            } else if (_.isObject(value)) {
+                result = "object";
+            } 
+            return result;
+        },
 
         /**
          * Iterate through the list of specs; return the 'container' fn of the
@@ -397,101 +259,143 @@
             var match = _.find(specs, function(spec){
                 return spec._matcherFn(attName, val, existing, opts);
             });
-            return match ? match._containerFn : _.bind(this.notSpecked, this);
+            return match._containerFn;
         },
 
-        /**
-         * Returns a container function which will produce a container for
-         * nesting.
-         * @param spec 'container' spec: the part of the nestify spec which
-         * specifies how to produce a container for nesting.
-         * @return a function which produces a container to be set for an
-         * attribute. The function takes these args: 
-         * 1. the unmodified container being set
-         * 2. the existing container (may be null or undefined)
-         * 3. the options hash
-         * 4. the String attribute name
-         * 5. the Backbone Model
-         */
-        makeContainerFn: function(spec){
-            var containerFn;
+        object: {
+            /**
+             * Overlay the contents of the new 'container' Object into the
+             * contents of the 'existing' Object.
+             */
+            merge: function(existing, container){
+                return _.extend({}, existing, container);
+            },
 
-            if (_.isFunction(spec.fn)) {
-                containerFn = spec.fn;
-            } else {
-                spec = _.isFunction(spec) ? {constructor:spec} : spec;
-                // Thunkify creation of new container; it may not be needed
-                containerFn = _.partial(this.specked, function(opts){
-                    var container = new spec.constructor(spec.args);
-                    /* Here's where that undocumented flag gets detected. */
-                    if (spec.spec === "recurse"){
-                        _.extend(container, opts.compiled);
-                    } else if (spec.spec){
-                        _.extend(container, mixinFn(spec.spec));
+            /** resetting an Object or Array => return the new container */
+            reset: _.identity
+        },
+
+        array: {
+            /**
+             * Overlay the contents of the new 'container' array into the
+             * contents of the 'existing' array.
+             */
+            merge: function(existing, container){
+                return _.map(_.zip(container, existing), _.compose(_.first, _.compact));
+            },
+
+            /** resetting an Object or Array => return the new container */
+            reset: _.identity
+        },
+
+        model: {
+            merge: function(existing, v, opts){
+                existing.set(v, opts);
+            },
+
+            reset: function(existing, v, opts){
+                existing.clear();
+                existing.set(v, opts);
+            }
+        },
+
+        collection: {
+            /**
+             * Create new Models from the indicated Collection Model, and
+             * 'reset' them on the Collection
+             * @param coll Backbone.Collection which is to be reset with
+             * new models
+             * @param atts raw Object which is to be used to instantiate new
+             * Models to 'reset' to the Collection
+             * @param opts (optional) options to the Model constructor and
+             * Collection 'reset' method.
+             */
+            reset: function(coll, atts, opts){
+                _assertArray(atts);
+                var Constructor = coll.model;
+                coll.reset(_.map(atts, function(att){
+                    return new Constructor(att, opts);
+                }), opts);
+            },
+
+            /**
+             * Create new Models from the indicated Collection Model, and
+             * intelligently merge them in to the Collection.
+             * @param coll Backbone.Collection which is to be merged with
+             * new models
+             * @param atts raw Object which is to be used to instantiate new
+             * Models to add to the Collection
+             * @param opts (optional) options to the Model constructor
+             * or Model 'set' method
+             */
+            smartMerge: function(coll, atts, opts){
+                _assertArray(atts);
+                var Constructor = coll.model;
+                coll.set(_.map(atts, function(att){
+                    return new Constructor(att, opts);
+                }), opts);
+            },
+
+            /**
+             * Default behavior, update nested collection index-based.
+             */
+            merge: function(coll, atts, opts){
+                _assertArray(atts);
+                var Constructor = coll.model;
+                var alist = _.zip(coll.models, atts);
+                _.each(alist, function(pair, i){
+
+                    var m = _.first(pair);
+                    var att = _.last(pair);
+
+                    if (att){
+                        if (!m){
+                            m = new Constructor(att, opts);
+                            /* Note that this may fill the models
+                             * array sparsely, perhaps unexpectedly. */
+                            coll.models[i] = m;
+                            coll.length = coll.models.length;
+                        } else {
+                            m.set(att, opts);
+                        }
                     }
-                    return container;
                 });
             }
+        }
+    };
 
-            return containerFn;
+    var _updater = {
+
+        defaults: {
+            object: "reset",
+            array: "reset",
+            collection: "merge",
+            model: "merge"
         },
 
-        /**
-         * Nested Backbone Model or Constructor case.
-         */
-        specked: function(thunk, v, existing, options){
-            // Either reuse the nested container, if
-            // present, or realize the new nested instance from 
-            // the thunk.
-            var container = existing || thunk(options);
-
-            // TODO Backbone.Collection has a 'set' method in
-            // Backbone 1.0.0; just use 'reset' for now.
-            if (container.reset){// It's a Backbone.Collection
-                if (existing){
-                    switch (options.coll){
-                    case "reset":
-                        _collection.reset(container, v, options);
-                        break;
-                    case "set":
-                        _collection.smartMerge(container, v, options);
-                        break;
-                    case "at":
-                        /* jshint -W086 */
-                    default:
-                        _collection.merge(container, v, options);
-                        break;
-                    }
-                } else {
-                    _collection.reset(container, v, options);
-                }
-            } else {// It's a Backbone.Model
-                container.set(v, options);
-            }
-
-            return container;
+        object: {
+            reset: _container.object.reset,
+            merge: _container.object.merge,
+            smart: _container.object.merge
         },
 
-        /**
-         * There is no spec for the attribute. Therefore, do default
-         * nesting: if existing container is an array or object, add to
-         * it. Otherwise return the new container;
-         * DEPRECATED TODO remove
-         */
-        notSpecked: _.identity
-/*
-        notSpecked: function(container, existing){
-            var newContainer = container;
-            if (existing){
-                if (_.isArray(existing)){
-                    newContainer = this.overlayArray(container, existing);
-                } else if (_.isObject(existing)){
-                    newContainer = this.overlayObject(container, existing);
-                }
-            } 
-            return newContainer;
+        array: {
+            reset: _container.array.reset,
+            merge: _container.array.merge,
+            smart: _container.array.merge
         },
- */
+
+        model: {
+            reset: _container.model.reset,
+            merge: _container.model.merge,
+            smart: _container.model.merge
+        },
+
+        collection: {
+            reset: _container.collection.reset,
+            merge: _container.collection.merge,
+            smart: _container.collection.smartMerge
+        }
     };
 
     /**
@@ -540,62 +444,176 @@
      * @return array of objects containing two attributes:
      * '_matcherFn' and '_containerFn'.
      */
-    var _compile = function(spec, opts){
+    var _compiler = {
 
-        var specList, 
-            compiled;
-
-        if (_.isArray(spec)){
-            specList = spec;
-        } else if (_.isObject(spec)){
-            specList = [{hash: spec}];
-        } else {
-            specList = [];
-        }
-
-        compiled = [{
-            _matcherFn: _matchers.useUnmodified,
-            _containerFn: _.identity
-        }];
-
-        compiled = _.reduce(specList, function(memo, specPiece){
+        determineType: function(spec){
             
-            if (specPiece.hash){
-                _.each(specPiece.hash, function(v, k){
-                    memo.push({
-                        _matcherFn: _.partial(_matchers.stringMatcher, k),
-                        _containerFn: _container.makeContainerFn(v)
-                    });
-                });
+            var result;
+            if (spec.constructor.prototype instanceof Backbone.Model) {
+                result = "model";
+            } else if (spec.constructor.prototype instanceof Backbone.Collection) {
+                result = "collection";
+            } else if (spec.constructor === Array) {
+                result = "array";
+            } else if (spec.constructor === Object) {
+                result = "object";
+            } 
+            return result;
+        },
 
-            } else { 
+        /**
+         * Compiles and returns a constructor function - a function
+         * which, when invoked, returns a newly-constructed container.
+         */
+        compileConstructorFn: function(spec, type){
+            spec = _.isFunction(spec) ? {constructor:spec} : spec;
 
-                var result = {
-                    _containerFn: _container.makeContainerFn(specPiece.container)
-                };
+            var invokeWithNew = existy(type);
 
-                if (_.isRegExp(specPiece.match)){
-                    result._matcherFn = _.partial(_matchers.regexMatcher, specPiece.match);
-                } else if (_.isString(specPiece.match)){
-                    result._matcherFn = _.partial(_matchers.stringMatcher, specPiece.match);
-                } else if (_.isFunction(specPiece.match)){
-                    result._matcherFn = specPiece.match;
-                } else {
-                    // no matcher specified means match all
-                    result._matcherFn = _matchers.matchAll;
+            // Thunkify construction of new container; it may not be needed
+            return function(v, opts, att, m){
+
+                var container = invokeWithNew ? 
+                        new spec.constructor(spec.args, opts) : 
+                        spec.constructor(spec.args, opts, att, m); //TODO args?
+
+                /* Here's where that undocumented flag gets detected. */
+                if (spec.spec === "recurse"){
+//TODO              _.extend(container, opts.compiled);
+                } else if (spec.spec){
+                    // TODO nestify existing instance
+                    _.extend(container, mixinFn(spec.spec));
+
+                    // ...and then this won't be necessary
+                    container.set(v, opts);
                 }
 
-                memo.push(result);
+                return container;
+            };
+            
+        },
+
+        /**
+         * Returns a function which will produce a container for
+         * nesting.
+         * @param spec 'container' spec: the part of the nestify spec which
+         * specifies how to produce a container for nesting.
+         * @return a function which produces a container to be set for an
+         * attribute. The function takes these args: 
+         * 1. the unmodified container being set
+         * 2. the existing container (may be null or undefined)
+         * 3. the options hash
+         * 4. the String attribute name
+         * 5. the Backbone Model
+         */
+        compileContainerFn: function(spec){
+
+            spec = _.isFunction(spec) ? {constructor:spec} : spec;
+
+            var containerType = this.determineType(spec),
+                updaterHash = containerType && _updater[containerType],
+                constructorFn = this.compileConstructorFn(spec, containerType),
+                defaultUpdater = _updater.defaults[containerType];
+
+            return function(v, existing, options, att, m){
+                if (existing){
+                    var update = options.update || defaultUpdater;
+                    containerType = containerType || _container.determineType(spec);
+                    // TODO log warning if containerType still falsey at this point
+                    updaterHash = updaterHash || _updater[containerType];
+                    return updaterHash[update](existing, v, options);
+                } else {
+                    return constructorFn(v, options);
+                }
+            };
+        },
+
+        compileExistingContainerFn: function(type){
+            var updaterHash = _updater[type],
+                defaultUpdater = _updater.defaults[type];
+            return function(v, existing, options, att, m){
+                var update = options.update || defaultUpdater;
+                return updaterHash[update](existing, v, options);
+            };
+        },
+
+        compile: function(spec, opts){
+
+            var specList, 
+                compiled;
+
+            if (_.isArray(spec)){
+                specList = spec;
+            } else if (_.isObject(spec)){
+                specList = [{hash: spec}];
+            } else {
+                specList = [];
             }
 
-            return memo;
-        }, compiled);
+            compiled = [{
+                _matcherFn: _matchers.useUnmodified,
+                _containerFn: _.identity
+            }];
 
-        // stash the compiled spec in the opts
-        opts.compiled = compiled;
-        return compiled;
+            compiled = _.reduce(specList, function(memo, specPiece){
+                
+                if (specPiece.hash){
+                    _.each(specPiece.hash, function(v, k){
+                        memo.push({
+                            _matcherFn: _.partial(_matchers.stringMatcher, k),
+                            _containerFn: this.compileContainerFn(v)
+                        });
+                    }, this);
+
+                } else { 
+
+                    var result = {
+                        _containerFn: this.compileContainerFn(specPiece.container)
+                    };
+
+                    if (_.isRegExp(specPiece.match)){
+                        result._matcherFn = _.partial(_matchers.regexMatcher, specPiece.match);
+                    } else if (_.isString(specPiece.match)){
+                        result._matcherFn = _.partial(_matchers.stringMatcher, specPiece.match);
+                    } else if (_.isFunction(specPiece.match)){
+                        result._matcherFn = specPiece.match;
+                    } else {
+                        // no matcher specified means match all
+                        result._matcherFn = _matchers.matchAll;
+                    }
+
+                    memo.push(result);
+                }
+
+                return memo;
+            }, compiled, this);
+
+            // fall thru: handle unspecified, existing containers
+            compiled.push({
+                _matcherFn: _matchers.isCollection,
+                _containerFn: this.compileExistingContainerFn("collection")
+            }, {
+                _matcherFn: _matchers.isModel,
+                _containerFn: this.compileExistingContainerFn("model")
+            }, {
+                _matcherFn: _matchers.isArray,
+                _containerFn: this.compileExistingContainerFn("array")
+            }, {
+                _matcherFn: _matchers.isObject,
+                _containerFn: this.compileExistingContainerFn("object")
+            });
+
+            // final fall thru: handle any non-specified, non-container attribute
+            compiled.push({
+                _matcherFn: _matchers.matchAll,
+                _containerFn: _.identity
+            });
+
+            // stash the compiled spec in the opts
+            opts.compiled = compiled;
+            return compiled;
+        }
     };
-
 
     /**
      * Return the module: a function which must be invoked to
@@ -637,8 +655,8 @@
      */
     var mixinFn = _.extend(function(spec, options){
 
-        var _moduleOpts = _.extend({}, _defaultOpts, options),
-            _prepAtts = _.partial(_prepAttributes, _compile(spec, _moduleOpts));
+        var _moduleOpts = _.extend({}, _defaultOpts, options);
+        spec = _compiler.compile(spec, _moduleOpts);
 
         return {
             /**
@@ -694,7 +712,7 @@
                  * passed in, or the case that value is already a Backbone.Model
                  */
                 if (_.isObject(attrs) && !(opts instanceof Backbone.Model)){
-                    attrs = _prepAtts.call(this, attrs, opts);
+                    attrs = _prepAttributes.call(this, spec, attrs, opts);
                 }
 
                 return Backbone.Model.prototype.set.call(this, attrs, opts);
