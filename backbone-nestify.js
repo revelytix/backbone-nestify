@@ -272,7 +272,9 @@
             },
 
             /** resetting an Object or Array => return the new container */
-            reset: _.identity
+            reset: function(existing, container){
+                return container;
+            }
         },
 
         array: {
@@ -285,17 +287,21 @@
             },
 
             /** resetting an Object or Array => return the new container */
-            reset: _.identity
+            reset: function(existing, container){
+                return container;
+            }
         },
 
         model: {
             merge: function(existing, v, opts){
                 existing.set(v, opts);
+                return existing;
             },
 
             reset: function(existing, v, opts){
                 existing.clear();
                 existing.set(v, opts);
+                return existing;
             }
         },
 
@@ -316,6 +322,7 @@
                 coll.reset(_.map(atts, function(att){
                     return new Constructor(att, opts);
                 }), opts);
+                return coll;
             },
 
             /**
@@ -334,6 +341,7 @@
                 coll.set(_.map(atts, function(att){
                     return new Constructor(att, opts);
                 }), opts);
+                return coll;
             },
 
             /**
@@ -360,6 +368,8 @@
                         }
                     }
                 });
+
+                return coll;
             }
         }
     };
@@ -438,20 +448,23 @@
 
     /**
      * Produces an internally optimized version of the spec.
-     * Currently: a list of matcher/container function pairs. 
-     * @param spec input to API
-     * @param opts usual Backbone and/or Nestify options
-     * @return array of objects containing two attributes:
-     * '_matcherFn' and '_containerFn'.
      */
     var _compiler = {
 
+        /**
+         * Determine the type of container (if any) specified by
+         * 'spec'
+         * @param spec a container portion of a spec
+         * @return String indication of container type, or undefined.
+         */
         determineType: function(spec){
             
             var result;
-            if (spec.constructor.prototype instanceof Backbone.Model) {
+            if (spec.constructor === Backbone.Model ||
+                spec.constructor.prototype instanceof Backbone.Model) {
                 result = "model";
-            } else if (spec.constructor.prototype instanceof Backbone.Collection) {
+            } else if (spec.constructor === Backbone.Collection ||
+                       spec.constructor.prototype instanceof Backbone.Collection) {
                 result = "collection";
             } else if (spec.constructor === Array) {
                 result = "array";
@@ -466,13 +479,10 @@
          * which, when invoked, returns a newly-constructed container.
          */
         compileConstructorFn: function(spec, type){
-            spec = _.isFunction(spec) ? {constructor:spec} : spec;
-
             var invokeWithNew = existy(type);
 
             // Thunkify construction of new container; it may not be needed
             return function(v, opts, att, m){
-
                 var container = invokeWithNew ? 
                         new spec.constructor(spec.args, opts) : 
                         spec.constructor(spec.args, opts, att, m); //TODO args?
@@ -486,8 +496,10 @@
 
                     // ...and then this won't be necessary
                     container.set(v, opts);
+                } else {
+                    // ...and then this won't be necessary
+                    container.set(v, opts);
                 }
-
                 return container;
             };
             
@@ -532,13 +544,24 @@
             var updaterHash = _updater[type],
                 defaultUpdater = _updater.defaults[type];
             return function(v, existing, options, att, m){
-                var update = options.update || defaultUpdater;
-                return updaterHash[update](existing, v, options);
+                if (existing){
+                    var update = options.update || defaultUpdater;
+                    return updaterHash[update](existing, v, options);
+                } else {
+                    return v;
+                }
             };
         },
 
+        /**
+         * Produces an internally optimized version of the spec.
+         * Currently: a list of matcher/container function pairs. 
+         * @param spec input to API
+         * @param opts usual Backbone and/or Nestify options
+         * @return array of objects containing two attributes:
+         * '_matcherFn' and '_containerFn'.
+         */
         compile: function(spec, opts){
-
             var specList, 
                 compiled;
 
@@ -589,6 +612,10 @@
             }, compiled, this);
 
             // fall thru: handle unspecified, existing containers
+            /*
+             * TODO note to self: 'use unmodified' matcher (above) should
+             * prevent collection or model from falling through to here...?
+             */ 
             compiled.push({
                 _matcherFn: _matchers.isCollection,
                 _containerFn: this.compileExistingContainerFn("collection")
@@ -709,7 +736,7 @@
 
                 /**
                  * Skip the case of a simple key/value pair being
-                 * passed in, or the case that value is already a Backbone.Model
+                 * passed in, or the case that value is already a Backbone.Model TODO
                  */
                 if (_.isObject(attrs) && !(opts instanceof Backbone.Model)){
                     attrs = _prepAttributes.call(this, spec, attrs, opts);

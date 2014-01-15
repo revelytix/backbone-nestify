@@ -425,7 +425,7 @@
                                                         {tangy:"salsa"}]
                                                });
                     expect(acct.get("orders").models.length).to.equal(2);
-                    acct.set({orders:[{hot:"sausage"}]}, {coll:"reset"});
+                    acct.set({orders:[{hot:"sausage"}]}, {update:"reset"});
                     expect(acct.get("orders").models.length).to.equal(1);
                     expect(acct.get("orders").length).to.equal(1);
                 });
@@ -434,7 +434,7 @@
                     var Account = Backbone.Model.extend(nestify({
                         orders: {constructor:env.Orders}
                     }, {
-                        coll:"reset"
+                        update:"reset"
                     }));
 
                     var acct = new Account({orders:[{spicy:"meatball"},
@@ -447,7 +447,7 @@
                 });
             });
 
-            describe('setting with the "set" option', function(){
+            describe('setting with the "smart" option', function(){
 
                 /**
                  * Update nested collection with built-in 'set'
@@ -460,7 +460,7 @@
                                                         {tangy:"salsa"}]
                                                });
                     expect(acct.get("orders").models.length).to.equal(2);
-                    acct.set({orders:[{hot:"sausage"}]}, {coll:"set", remove:false});
+                    acct.set({orders:[{hot:"sausage"}]}, {update:"smart", remove:false});
                     expect(acct.get("orders").models.length).to.equal(3);
                     expect(acct.get("orders").length).to.equal(3);
                 });
@@ -469,7 +469,7 @@
                     var Account = Backbone.Model.extend(nestify({
                         orders: {constructor:env.Orders}
                     }, {
-                        coll:"set"
+                        update:"smart"
                     }));
 
                     var acct = new Account({orders:[{spicy:"meatball"},
@@ -484,7 +484,7 @@
 
             /**
              * The default and most precise behavior: nested
-             * collections are updated with 'at' function based on
+             * collections are updated with 'merge' function based on
              * index.
              */
             describe('setting with the default "at" option', function(){
@@ -493,7 +493,7 @@
                                                         {tangy:"salsa"}]
                                                });
                     expect(acct.get("orders").models.length).to.equal(2);
-                    acct.set({orders:[{hot:"sausage"}]}, {coll:"at"});
+                    acct.set({orders:[{hot:"sausage"}]}, {update:"merge"});
                     expect(acct.get("orders").models.length).to.equal(2);
                     expect(acct.get("orders").length).to.equal(2);
                 });
@@ -502,7 +502,7 @@
                     var Account = Backbone.Model.extend(nestify({
                         orders: {constructor:env.Orders}
                     }, {
-                        coll:"at"
+                        update:"merge"
                     }));
 
                     var acct = new Account({orders:[{spicy:"meatball"},
@@ -591,6 +591,16 @@
                     var order = new env.Order();
                     order.set(["something", "aak"], "snuh");
                     order.set(["something", "oop"], "blammo");
+                    var b = order.get("something");
+                    expect(b).to.be.an.instanceof(Object);
+                    expect(b.aak).to.be.undefined;
+                    expect(b.oop).to.equal("blammo");
+                });
+
+                it('should set objects nested (merge update)', function(){
+                    var order = new env.Order();
+                    order.set(["something", "aak"], "snuh");
+                    order.set(["something", "oop"], "blammo", {update:"merge"});
                     var b = order.get("something");
                     expect(b).to.be.an.instanceof(Object);
                     expect(b.aak).to.equal("snuh");
@@ -706,8 +716,40 @@
                     }]);
                 });
 
-                it('should overlay arrays?', function(){
+                it('should replace arrays (default mixin)', function(){
                     var order = _.extend(new Backbone.Model(), nestify());
+                    order.set({items: [{
+                        id: 1,
+                        desc:"laptop",
+                        size: "med",
+                        count: 1
+                    }, {
+                        id: 2,
+                        desc:"celery",
+                        count: 1
+                    }]});
+                    order.set({items: [{
+                        id: 1,
+                        desc:"laptop",
+                        count: 2
+                    },null,{
+                        id: 3,
+                        desc:"broccoli",
+                        count: 2
+                    }]});
+                    expect(order.get("items")).to.deep.equal([{
+                        id: 1,
+                        desc:"laptop",
+                        count: 2
+                    }, null, {
+                        id: 3,
+                        desc:"broccoli",
+                        count: 2
+                    }]);
+                });
+
+                it('should overlay arrays', function(){
+                    var order = _.extend(new Backbone.Model(), nestify({}, {update:"merge"}));
                     order.set({items: [{
                         id: 1,
                         desc:"laptop",
@@ -744,8 +786,8 @@
                 });
 
 
-                it('should overlay arrays? also', function(){
-                    var order = _.extend(new Backbone.Model(), nestify());
+                it('should overlay arrays also', function(){
+                    var order = _.extend(new Backbone.Model(), nestify({}, {update:"merge"}));
                     order.set({items: [{
                         id: 1,
                         desc:"laptop",
