@@ -454,21 +454,21 @@
         /**
          * Determine the type of container (if any) specified by
          * 'spec'
-         * @param spec a container portion of a spec
+         * @param constructor a container constructor function
          * @return String indication of container type, or undefined.
          */
-        determineType: function(spec){
+        determineTypeFromConstructor: function(constructor){
             
             var result;
-            if (spec.constructor === Backbone.Model ||
-                spec.constructor.prototype instanceof Backbone.Model) {
+            if (constructor === Backbone.Model ||
+                constructor.prototype instanceof Backbone.Model) {
                 result = "model";
-            } else if (spec.constructor === Backbone.Collection ||
-                       spec.constructor.prototype instanceof Backbone.Collection) {
+            } else if (constructor === Backbone.Collection ||
+                       constructor.prototype instanceof Backbone.Collection) {
                 result = "collection";
-            } else if (spec.constructor === Array) {
+            } else if (constructor === Array) {
                 result = "array";
-            } else if (spec.constructor === Object) {
+            } else if (constructor === Object) {
                 result = "object";
             } 
             return result;
@@ -522,7 +522,7 @@
 
             spec = _.isFunction(spec) ? {constructor:spec} : spec;
 
-            var containerType = this.determineType(spec),
+            var containerType = this.determineTypeFromConstructor(spec.constructor),
                 updaterHash = containerType && _updater[containerType],
                 constructorFn = this.compileConstructorFn(spec, containerType),
                 defaultUpdater = _updater.defaults[containerType];
@@ -530,7 +530,7 @@
             return function(v, existing, options, att, m){
                 if (existing){
                     var update = options.update || defaultUpdater;
-                    containerType = containerType || _container.determineType(spec);
+                    containerType = containerType || _container.determineType(v);
                     // TODO log warning if containerType still falsey at this point
                     updaterHash = updaterHash || _updater[containerType];
                     return updaterHash[update](existing, v, options);
