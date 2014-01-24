@@ -283,7 +283,11 @@ The `update` option gives fine-grained control over the updating of Nestify [con
 * `merge` - new values are merged into a container's current values
 * `smart` - new values are "smart"-merged into a container's current values. 
 
-Each option has slightly different implications for each different [type of container](#containers). It is best illustrated with examples; let's start with an existing order.
+Each option has slightly different implications for each different [type of container](#containers). 
+
+_Note:_ Currently, the contents of Objects and Arrays are _not_ recursively updated. That is, containers nested within them are not intelligently updated, but rather are left alone or replaced altogether.
+
+This option is best illustrated with examples; let's start with an existing order.
 ```javascript
 var order = new Order({items:[{id:1,desc:"bread"}, 
                               {id:2,desc:"cheese"}]});
@@ -311,8 +315,8 @@ The most precise behavior: container attributes are updated by index for Array-l
 
 * `Collection` - _default behavior_ - values are overwritten individually, in place, by index (see [at](http://backbonejs.org/#Collection-at) method)
 * `Model` - _default behavior_ - updated using [set](http://backbonejs.org/#Model-set)
-* `Array` - updated by numerical index
-* `Object` - updated by String attribute name
+* `Array` - updated by numerical index. _Note:_ Currently, the contents of Arrays are _not_ recursively merged. That is, containers nested within the Array are not intelligently updated, but rather are left alone or replaced altogether.
+* `Object` - updated by String attribute name._Note:_ Currently, the contents of Objects are _not_ recursively merged. That is, containers nested within the Object are not intelligently updated, but rather are left alone or replaced altogether.
 
 Example: updating the Items Collection...
 ```javascript
