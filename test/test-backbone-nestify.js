@@ -1425,7 +1425,19 @@
                     expect(model.get('order.items')).to.be.an.instanceof(Backbone.Collection);
                     expect(model.get('order.items.0')).to.be.an.instanceof(Backbone.Model);
                     expect(model.get("order.items.0.id")).to.equal(2113);
-                });                
+                });
+
+                it('can nestify an existing Model instance', function(){
+                    var model = new Backbone.Model({items: [{name:"monkey"}, {name:"butter"}]});
+                    model = nestify.instance(model, {items: env.Items}, {delim: "."});
+                    expect(model.get('items')).to.be.an.instanceof(env.Items);
+                    expect(model.get('items.0')).to.be.an.instanceof(env.Item);
+                    expect(model.get("items.0.name")).to.equal("monkey");
+                });
+
+                it('will safely handle attempting to nestify-instance a non-Model', function(){
+                    nestify.instance("not a model", {items: env.Items});
+                });
             });
         });
 

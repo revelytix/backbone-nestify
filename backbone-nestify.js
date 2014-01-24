@@ -782,6 +782,26 @@
             return compiled;
         },
 
+        /**
+         * alpha: subject to change
+         * Nestify a Backbone.Model instance in-place, modifying it's
+         * internal attributes according to the supplied spec.
+         * @param modelInstance an existing instance of Backbone.Model
+         * (or subclass)
+         * @param spec the usual
+         * @param opts the usual
+         * @return the modelInstance param
+         */
+        instance: function(modelInstance, spec, opts){
+            if (modelInstance instanceof Backbone.Model) {
+                _.extend(modelInstance, mixinFn(spec, opts));
+                var atts = modelInstance.attributes;
+                modelInstance.attributes = {}; //TODO why is this necessary?
+                modelInstance.set(atts);
+            }
+            return modelInstance;
+        },
+
         // for testing purposes TODO
         pathToObject: _toObj
     });
