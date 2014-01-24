@@ -488,18 +488,15 @@
                         spec.constructor(spec.args, opts, att, m); //TODO args?
 
                 /* Here's where that undocumented flag gets detected. */
+                // TODO nestify existing instance
                 if (spec.spec === "recurse"){
-//TODO              _.extend(container, opts.compiled);
+                    _.extend(container, opts.compiled);
                 } else if (spec.spec){
-                    // TODO nestify existing instance
                     _.extend(container, mixinFn(spec.spec));
+                } 
+                // ...and then this won't be necessary
+                container.set(v, opts);
 
-                    // ...and then this won't be necessary
-                    container.set(v, opts);
-                } else {
-                    // ...and then this won't be necessary
-                    container.set(v, opts);
-                }
                 return container;
             };
             

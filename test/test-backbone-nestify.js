@@ -1408,12 +1408,9 @@
                  * A convenience to create a spec that will simply
                  * auto-nest into plain vanilla Backbone Models or
                  * Collections. No config necessary.
-                 *
-                 * *DISABLING* for now while there is some
-                 * implementation churn...
                  */
                 it('can create an auto-nest spec', function(){
-                    return; //disable the test
+
                     var spec = nestify.auto({delim:"."});
                     var model = _.extend(new Backbone.Model(), spec);
 
