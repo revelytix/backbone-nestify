@@ -36,8 +36,7 @@
     };
 
     /**
-     * Default options; currently these are to control the behavior of
-     * nested collections.
+     * Default options
      */
     var _defaultOpts = {
         coll: "at", // possible values are "reset", "set", "at"
@@ -208,17 +207,34 @@
             return v instanceof Backbone.Model;
         },
 
+        isExistingModel: function(att, v, existing){
+            return existing instanceof Backbone.Model;
+        },
+
         isCollection: function(att, v){
             return v instanceof Backbone.Collection;
+        },
+
+        isExistingCollection: function(att, v, existing){
+            return existing instanceof Backbone.Collection;
         },
 
         isArray: function(att, v){
             return _.isArray(v);
         },
        
+        isExistingArray: function(att, v, existing){
+            return _.isArray(existing);
+        },
+       
         isObject: function(att, v){
             return _.isObject(v);
+        },
+
+        isExistingObject: function(att, v, existing){
+            return _.isObject(existing);
         }
+
     };
     _.bindAll(_matchers, "useUnmodified");
 
@@ -539,12 +555,8 @@
             var updaterHash = _updater[type],
                 defaultUpdater = _updater.defaults[type];
             return function(v, existing, options, att, m){
-                if (existing){
-                    var update = options.update || defaultUpdater;
-                    return updaterHash[update](existing, v, options);
-                } else {
-                    return v;
-                }
+                var update = options.update || defaultUpdater;
+                return updaterHash[update](existing, v, options);
             };
         },
 
@@ -607,21 +619,17 @@
             }, compiled, this);
 
             // fall thru: handle unspecified, existing containers
-            /*
-             * TODO note to self: 'use unmodified' matcher (above) should
-             * prevent collection or model from falling through to here...?
-             */ 
             compiled.push({
-                _matcherFn: _matchers.isCollection,
+                _matcherFn: _matchers.isExistingCollection,
                 _containerFn: this.compileExistingContainerFn("collection")
             }, {
-                _matcherFn: _matchers.isModel,
+                _matcherFn: _matchers.isExistingModel,
                 _containerFn: this.compileExistingContainerFn("model")
             }, {
-                _matcherFn: _matchers.isArray,
+                _matcherFn: _matchers.isExistingArray,
                 _containerFn: this.compileExistingContainerFn("array")
             }, {
-                _matcherFn: _matchers.isObject,
+                _matcherFn: _matchers.isExistingObject,
                 _containerFn: this.compileExistingContainerFn("object")
             });
 

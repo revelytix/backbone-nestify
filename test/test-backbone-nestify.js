@@ -1158,6 +1158,49 @@
             });
         });
 
+        describe('unspecified Collection', function(){
+            it('will still be updated according to "update" option', function(){
+
+                var m = _.extend(new Backbone.Model({
+                    items: new Backbone.Collection([
+                        new Backbone.Model({id:1, name:"toothpaste"}),
+                        new Backbone.Model({id:2, name:"chowder"})
+                    ])
+                }), nestify());
+
+                expect(m.get('items')).to.be.an.instanceof(Backbone.Collection);
+                expect(m.get('items').length).to.equal(2);
+                expect(m.get('items|0|id')).to.equal(1);
+                expect(m.get('items|1|id')).to.equal(2);
+
+                m.set({
+                    items: [{id:3, name: "waffle"}]
+                });
+                expect(m.get('items')).to.be.an.instanceof(Backbone.Collection);
+                expect(m.get('items').length).to.equal(2);
+                expect(m.get('items|0|id')).to.equal(3);
+                expect(m.get('items|1|id')).to.equal(2);
+            });
+        });
+
+        describe('unspecified Model', function(){
+            it('will still be updated according to "update" option', function(){
+
+                var m = _.extend(new Backbone.Model({
+                    item: new Backbone.Model({id:1, name:"toothpaste"}),
+                    exchange: new Backbone.Model({id:2, name:"chowder"})
+                }), nestify());
+
+                m.set({
+                    item: {id:3, name: "waffle"}
+                });
+                expect(m.get('item')).to.be.an.instanceof(Backbone.Model);
+                expect(m.get('item|id')).to.equal(3);
+                expect(m.get('exchange|id')).to.equal(2);
+            });
+        });
+
+
         describe('spec API', function(){
 
             it('should contain only get and set keys', function(){
@@ -1440,6 +1483,8 @@
                 });
             });
         });
+
+
 
         /* just some API doodling */
         var example = function(){
