@@ -791,7 +791,8 @@
                  * should behave
                  */
                 it('should overlay arrays also', function(){
-                    return; //disable the test
+                    /*jshint -W027*/
+                    return; // disable the test
 
                     var order = _.extend(new Backbone.Model(), nestify({}, {update:"merge"}));
                     order.set({items: [{
