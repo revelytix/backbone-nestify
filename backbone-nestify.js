@@ -488,13 +488,11 @@
                         spec.constructor(spec.args, opts, att, m); //TODO args?
 
                 /* Here's where that undocumented flag gets detected. */
-                // TODO nestify existing instance
                 if (spec.spec === "recurse"){
                     _.extend(container, opts.compiled);
                 } else if (spec.spec){
                     _.extend(container, mixinFn(spec.spec));
                 } 
-                // ...and then this won't be necessary
                 container.set(v, opts);
 
                 return container;
@@ -797,7 +795,7 @@
                 _.extend(modelInstance, mixinFn(spec, opts));
                 var atts = modelInstance.attributes;
                 modelInstance.attributes = {}; //TODO why is this necessary?
-                modelInstance.set(atts);
+                modelInstance.set(atts, opts);
             }
             return modelInstance;
         },
