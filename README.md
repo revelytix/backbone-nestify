@@ -187,9 +187,9 @@ shoppingCart.unset("orders|0|items|2|backOrdered");
 
 ## Nestify Spec
 
-The plugin provides an API which accepts a nesting **spec**. The resulting **mixin** can then be set on individual Model instances or Model class constructors. Broadly speaking, the spec is a mapping from Model attribute names to the nested Model or Collection class for those attributes. 
+The plugin provides an API which accepts a nesting **spec**. The resulting **mixin** can then be set on individual Model instances or Model class constructors. 
 
-In other words, a Model (or Collection) definition (or instance) is nestified once, up front. Thereafter, any modifications to instances of that Model will adhere to the nesting specification. This is particularly good for dynamically deserializing complex JSON into the proper tree of nested Model/Collection instances.
+Broadly speaking, the spec is a mapping from Model attribute names to the nested Model or Collection class for those attributes. A Model (or Collection) definition (or instance) is nestified once, up front. Thereafter, any modifications to instances of that Model will adhere to the nesting specification. This is particularly good for dynamically deserializing complex JSON into the proper tree of nested Model/Collection instances.
 
 In this illustration, a ShoppingCart Model is nestified. Two of its attributes are paired with the desired nested Model types (Order and Account, respectively).
 ```javascript
@@ -248,6 +248,16 @@ _.extend(shoppingCart, mixin);
 ### Deep Nesting
 
 Nestifying is not confined to the top-level Model only. The nested Model and Collection types can themselves be nestified (as can be seen in the [Example](#example)).
+
+### Empty Spec
+
+A spec can be empty; the resulting mixin will still provide the benefits of the [getter/setter syntax](#nestify-getter-setter-syntax). 
+
+```javascript
+var MyModel = Backbone.Model.extend(nestify());
+```
+
+This might be sufficient if the [containers](#containers) to be nested within the nestified model(s) are already of the desired type. In that case, no specification is necessary. The spec's primary benefit is when new instances of specific Models or Collections need to be constructed when raw JavaScript is being set on the nestified model, such as when the JSON from a restful API endpoint is the input, for example.
 
 ## Options
 
