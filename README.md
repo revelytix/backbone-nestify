@@ -661,3 +661,33 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
 
     $ npm install
     $ grunt [dist]
+
+## Changelog
+
+### 0.3.0 
+
+#### Jan 28, 2014
+
+* `coll` option is now `update` option. Possible values (which were `reset`, `set` and `at`) are now `reset`, `merge` and `smart`.
+* Documented limitations of nesting primitive Object or Array containers. Collections or Models are recommended.
+* Further internal refactoring - more compiler optimizing; updaters.
+* Bug fix for updating of nested containers which are unspecified.
+* Nestify a populated model instance in-place (alpha; subject to change).
+
+### 0.2.0 
+
+#### Dec 19, 2013
+
+* Top-level `nestify` module function accepts `opts` param; can be overriden with `opts` to `get` or `set`.
+* Introduce configurable delimiter option.
+* Formalize spec general and abbreviated forms.
+* Bug fix: nested Collection length attribute.
+* Internal refactoring, cleanup - compiler, matchers, containers.
+* Switch mocha test runner, tests from 'bdd' to 'qunit'.
+* Auto-nestification into plain Models or Collections without specification (alpha; subject to change).
+
+### 0.1.0 
+
+#### Oct 30, 2013
+
+* Initial release of Revelytix internal version.
