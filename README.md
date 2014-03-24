@@ -664,6 +664,14 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
 
 ## Changelog
 
+### 0.4.0 
+
+#### Xxx xx, 2014
+
+* Bug fix (issue #2) - nestify.auto() should not create spurious properties on nested Models.
+* Bug fix (issue #3) - nestify.auto() should not assume arrays always contain nested objects.
+* Bug fix (issue #4) - only parse simple integer values as indices out of stringified getter/setter strings.
+
 ### 0.3.0 
 
 #### Jan 28, 2014

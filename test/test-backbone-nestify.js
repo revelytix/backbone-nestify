@@ -906,42 +906,57 @@
         describe('pathToObject', function(){
             it('should convert JSON to nested path form', function(){
                 var expected = {foo: "bar"};
-                expect(nestify.pathToObject("foo", "bar")).to.deep.equal(expected);
+                expect(nestify._pathToObject("foo", "bar")).to.deep.equal(expected);
             });
 
             it('should convert JSON to nested path form', function(){
                 var expected = {foo: {bar: "Baz"}};
-                expect(nestify.pathToObject(expected)).to.deep.equal(expected);
-                expect(nestify.pathToObject(["foo", "bar"], "Baz")).to.deep.equal(expected);
+                expect(nestify._pathToObject(expected)).to.deep.equal(expected);
+                expect(nestify._pathToObject(["foo", "bar"], "Baz")).to.deep.equal(expected);
             });
 
             it('should convert JSON with array to nested path form', function(){
                 var expected = {foo: [{baz: "Goo"}]};
-                expect(nestify.pathToObject(expected)).to.deep.equal(expected);
-                expect(nestify.pathToObject(["foo", 0, "baz"], "Goo")).to.deep.equal(expected);
+                expect(nestify._pathToObject(expected)).to.deep.equal(expected);
+                expect(nestify._pathToObject(["foo", 0, "baz"], "Goo")).to.deep.equal(expected);
             });
 
             it('should convert JSON with array to nested path form', function(){
                 var expected = {foo: {bar: [, , {baz: "Goo"}]}};
-                expect(nestify.pathToObject(expected)).to.deep.equal(expected);
-                expect(nestify.pathToObject(["foo", "bar", 2, "baz"], "Goo")).to.deep.equal(expected);
+                expect(nestify._pathToObject(expected)).to.deep.equal(expected);
+                expect(nestify._pathToObject(["foo", "bar", 2, "baz"], "Goo")).to.deep.equal(expected);
             });
 
             it('should convert JSON with null value to nested path form', function(){
                 var expected = {foo: {bar: null}};
-                expect(nestify.pathToObject(["foo", "bar"], null)).to.deep.equal(expected);
+                expect(nestify._pathToObject(["foo", "bar"], null)).to.deep.equal(expected);
             });
 
             it('should convert JSON with undefined value to nested path form', function(){
                 var un_D_fined;
                 var expected = {foo: {bar: un_D_fined}};
-                expect(nestify.pathToObject(["foo", "bar"], un_D_fined)).to.deep.equal(expected);
+                expect(nestify._pathToObject(["foo", "bar"], un_D_fined)).to.deep.equal(expected);
             });
 
             it('should convert JSON with undefined value to nested path form', function(){
                 var un_D_fined = void 0;
                 var expected = {foo: [{bar: un_D_fined}]};
-                expect(nestify.pathToObject(["foo", 0, "bar"], un_D_fined)).to.deep.equal(expected);
+                expect(nestify._pathToObject(["foo", 0, "bar"], un_D_fined)).to.deep.equal(expected);
+            });
+        });
+
+        /** test 'private' properNum function, issue #4 */
+        describe('properNum', function(){
+            it('should (only) parse stringified simple integers into Numbers, leaving everything else as Strings ', function(){
+                expect(nestify._properNum("foo")).to.equal("foo");
+                expect(nestify._properNum(13)).to.equal(13);
+                expect(nestify._properNum("13")).to.equal(13);
+                // hex is a no-no
+                expect(nestify._properNum("5fa9")).to.equal("5fa9");
+                // UUIDs is a no-no
+                expect(nestify._properNum("531f2d1d-5fa9-49eb-bfcb-8d269ae283d9")).to.equal("531f2d1d-5fa9-49eb-bfcb-8d269ae283d9");
+                // arithmetic expression is a no-no
+                expect(nestify._properNum("3-2")).to.equal("3-2");                
             });
         });
 
@@ -1448,43 +1463,180 @@
             });
 
             describe('convenience functions', function(){
-                /**
-                 * A convenience to create a spec that will simply
-                 * auto-nest into plain vanilla Backbone Models or
-                 * Collections. No config necessary.
-                 */
-                it('can create an auto-nest spec', function(){
 
-                    var spec = nestify.auto({delim:"."});
-                    var model = _.extend(new Backbone.Model(), spec);
+                describe('nestify.auto()', function(){
+                    /**
+                     * A convenience to create a spec that will simply
+                     * auto-nest into plain vanilla Backbone Models or
+                     * Collections. No config necessary.
+                     */
+                    it('can create an auto-nest spec', function(){
+                        var spec = nestify.auto({delim:"."});
+                        var model = _.extend(new Backbone.Model(), spec);
 
-                    model.set("order.items.0.id", 2112);
-                    expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
-                    expect(model.get('order.items')).to.be.an.instanceof(Backbone.Collection);
-                    expect(model.get('order.items.0')).to.be.an.instanceof(Backbone.Model);
-                    expect(model.get("order.items.0.id")).to.equal(2112);
+                        model.set("order.items.0.id", 2112);
+                        expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('order.items')).to.be.an.instanceof(Backbone.Collection);
+                        expect(model.get('order.items.0')).to.be.an.instanceof(Backbone.Model);
+                        expect(model.get("order.items.0.id")).to.equal(2112);
 
-                    model.set({order:{items: [{id: 2113}]}});
-                    expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
-                    expect(model.get('order.items')).to.be.an.instanceof(Backbone.Collection);
-                    expect(model.get('order.items.0')).to.be.an.instanceof(Backbone.Model);
-                    expect(model.get("order.items.0.id")).to.equal(2113);
+                        model.set({order:{items: [{id: 2113}]}});
+                        expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('order.items')).to.be.an.instanceof(Backbone.Collection);
+                        expect(model.get('order.items.0')).to.be.an.instanceof(Backbone.Model);
+                        expect(model.get("order.items.0.id")).to.equal(2113);
+                    });
+
+                    it('can create an auto-nest spec, simple', function(){
+                        var model = _.extend(new Backbone.Model(), nestify.auto());
+                        model.set({"A2112":{name: "foo"}});
+                        expect(model.get("A2112|name")).to.equal(model.get("A2112").get("name"));
+                        model.clear();
+                        model.set({"2112":{name: "foo"}});
+                        // have to use array syntax, otherwise '2112' is parsed as a Number
+                        expect(model.get(["2112","name"])).to.equal(model.get("2112").get("name"));
+                    });
+
+                    /* issue #2 */
+                    it('does not create spurious properties on model', function(){
+                        var spec = nestify.auto({delim:"."});
+                        var model = new Backbone.Model();
+                        var propertyCount = _.size(model);
+                        model = _.extend(new Backbone.Model(), spec);
+                        /**
+                         * expected property count, after mixin, is
+                         * plus two to account for new 'get' and 'set'
+                         * methods on the model.
+                         */
+                        expect(_.size(model)).to.equal(propertyCount + 2);
+                        model.set({2112:{name: "foo"}});
+                        var nested = model.get("2112");
+                        expect(_.size(nested)).to.equal(propertyCount);
+
+                    });
+
+                    /* issue #3 */
+                    it('ignores arrays of non-objects', function(){
+                        var spec = nestify.auto({delim:"."});
+                        var model = _.extend(new Backbone.Model(), spec);
+
+                        model.set({order:{items: ["one", 2, "three"]}});
+                        expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('order.items')).not.to.be.an.instanceof(Backbone.Collection);
+                        expect(model.get('order.items')).not.to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('order.items')).to.be.an.instanceof(Array);
+                        expect(model.get('order.items.0')).to.equal("one");
+                        expect(model.get('order.items.1')).to.equal(2);
+                    });
+
+                    it('ignores arrays unless they only contain objects', function(){
+                        var spec = nestify.auto({delim:"."});
+                        var model = _.extend(new Backbone.Model(), spec);
+
+                        model.set({order:{items: ["one", 2, {three: "Three"}, "four"]}});
+                        expect(model.get('order')).to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('order.items')).not.to.be.an.instanceof(Backbone.Collection);
+                        expect(model.get('order.items')).not.to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('order.items')).to.be.an.instanceof(Array);
+                        expect(model.get('order.items.0')).to.equal("one");
+                        expect(model.get('order.items.1')).to.equal(2);
+                        expect(model.get('order.items.2')).not.to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('order.items.2')).to.be.an.instanceof(Object);
+                    });
+
+                    it('can get, set into containers', function(){
+                        var model = new (Backbone.Model.extend(nestify.auto()))({
+                            "A1":{
+                                simple:7,
+                                "simple-array":[8],
+                                model:{
+                                    nested: "foo"
+                                },
+                                collection: [{
+                                    nested: "bar"
+                                }, {
+                                    nested: "baz"
+                                }]
+                            }
+                        });
+
+                        // get
+                        expect(model.get('A1|simple')).to.equal(7);
+                        expect(model.get('A1|simple-array|0')).to.equal(8);
+                        expect(model.get('A1|model|nested')).to.equal("foo");
+                        expect(model.get('A1|collection|0|nested')).to.equal("bar");
+                        expect(model.get('A1|collection|1|nested')).to.equal("baz");
+
+                        // set
+                        model.set('A1|simple', 12);
+                        model.set('A1|simple-array|0', 13);
+                        model.set('A1|model|nested', "goo");
+                        model.set('A1|collection|0|nested', "gar");
+                        model.set('A1|collection|1|nested', "gaz");
+
+                        expect(model.get('A1|simple')).to.equal(12);
+                        expect(model.get('A1|simple-array|0')).to.equal(13);
+                        expect(model.get('A1|model|nested')).to.equal("goo");
+                        expect(model.get('A1|collection|0|nested')).to.equal("gar");
+                        expect(model.get('A1|collection|1|nested')).to.equal("gaz");
+
+                        // set json
+                        model.set({A1: {"simple-array": [14]}});
+                        expect(model.get('A1|simple-array|0')).to.equal(14);
+
+                        // update array, replaces by default
+                        model.set('A1|simple-array|0', 22);
+                        model.set('A1|simple-array|1', 23);
+                        expect(model.get('A1|simple-array|0')).to.be.undefined;
+                        expect(model.get('A1|simple-array|1')).to.equal(23);
+
+                        // update array with 'merge' option
+                        model.set('A1|simple-array|0', 32, {update:"merge"});
+                        model.set('A1|simple-array|1', 33, {update:"merge"});
+                        expect(model.get('A1|simple-array|0')).to.equal(32);
+                        expect(model.get('A1|simple-array|1')).to.equal(33);
+                    });
+
+                    it('revelytix smoke test', function(){
+                        var spec = nestify.auto({delim:"."});
+                        var testjson = {
+                            "2112-5150":{
+                                "duration":79274,
+                                "status":"completed",
+                                "name":"foo",
+                                "id":"2112-5150",
+                                "type":["BarType"],
+                                "modifiedBy":"2113-OU812"
+                            }
+                        };
+                        var model = _.extend(new Backbone.Model(), spec);
+                        model.set(testjson);
+                        expect(model.get('2112-5150')).to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('2112-5150.id')).to.equal("2112-5150");
+                        expect(model.get('2112-5150.duration')).to.equal(79274);
+                        expect(model.get('2112-5150.type')).not.to.be.an.instanceof(Backbone.Collection);
+                        expect(model.get('2112-5150.type')).not.to.be.an.instanceof(Backbone.Model);
+                        expect(model.get('2112-5150.type')).to.be.an.instanceof(Array);
+                        expect(model.get('2112-5150.type.0')).to.equal("BarType");
+                    });
+
                 });
 
-                it('can nestify an existing Model instance', function(){
-                    var model = new Backbone.Model({items: [{name:"monkey"}, {name:"butter"}]});
-                    model = nestify.instance(model, {items: env.Items}, {delim: "."});
-                    expect(model.get('items')).to.be.an.instanceof(env.Items);
-                    expect(model.get('items.0')).to.be.an.instanceof(env.Item);
-                    expect(model.get("items.0.name")).to.equal("monkey");
-                });
+                describe('nestify.instance()', function(){
+                    it('can nestify an existing Model instance', function(){
+                        var model = new Backbone.Model({items: [{name:"monkey"}, {name:"butter"}]});
+                        model = nestify.instance(model, {items: env.Items}, {delim: "."});
+                        expect(model.get('items')).to.be.an.instanceof(env.Items);
+                        expect(model.get('items.0')).to.be.an.instanceof(env.Item);
+                        expect(model.get("items.0.name")).to.equal("monkey");
+                    });
 
-                it('will safely handle attempting to nestify-instance a non-Model', function(){
-                    nestify.instance("not a model", {items: env.Items});
+                    it('will safely handle attempting to nestify-instance a non-Model', function(){
+                        nestify.instance("not a model", {items: env.Items});
+                    });
                 });
             });
         });
-
 
 
         /* just some API doodling */
