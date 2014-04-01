@@ -1597,6 +1597,18 @@
                         expect(model.get('A1|simple-array|1')).to.equal(33);
                     });
 
+                    it('passes options to Model.extend, constructor', function(){
+                        var mixin = nestify.auto({extend: {idAttribute: "fooid"},
+                                                  args: {bonus: "thingy"}}),
+                            M = Backbone.Model.extend(mixin),
+                            m = new M();
+
+                        m.set({nested: {fooid: "ou812"}});
+
+                        expect(m.get('nested').id).to.equal("ou812");
+                        expect(m.get('nested|bonus')).to.equal("thingy");
+                    });
+
                     it('revelytix smoke test', function(){
                         var spec = nestify.auto({delim:"."});
                         var testjson = {

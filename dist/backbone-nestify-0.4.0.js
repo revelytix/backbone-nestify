@@ -1,3 +1,6 @@
+/* backbone-nestify 0.4.0 2014-03-31
+ * http://revelytix.github.io/backbone-nestify/
+ * Copyright 2014 Revelytix, Inc. All rights reserved. */
 /**
  * A mixin for models with nested models; overrides 'get' and 'set'
  * methods, deals properly with getting/setting raw attributes 
