@@ -23,7 +23,8 @@
 }(function(_, Backbone, chai, mocha, nestify) {
 
     var assert = chai.assert,
-        expect = chai.expect;
+        expect = chai.expect,
+        unDfynd;
 
     describe('Nestify', function(){
 
@@ -1282,7 +1283,6 @@
                     var spec = nestify({
                         'order': {
                             constructor: function(v, existing, opts){
-                                o.set(v, opts);
                                 return o;
                             }
                         }
@@ -1303,6 +1303,69 @@
                     expect(model.get('order|item')).to.be.an.instanceof(env.Item);
                     expect(model.get("order|item|id")).to.equal(2112);
                 });
+            });
+
+            describe('Object/Array constructor spec', function(){
+
+                it('basically works', function(){
+                    var spec = nestify({
+                        'notes':Array 
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set("notes|0", "Note0");
+                    expect(model.get("notes")).to.deep.equal(["Note0"]);
+                    expect(model.get("notes|0")).to.equal("Note0");
+                });
+
+                it('behaves same as if container were not specified', function(){
+                    var model = _.extend(new Backbone.Model(), nestify());
+                    model.set("notes|0", "Note0");
+                    expect(model.get("notes")).to.deep.equal(["Note0"]);
+                    expect(model.get("notes|0")).to.equal("Note0");
+                });
+
+                it('does not pass any args to Object constructor function', function(){
+                    var spec = nestify({
+                        'notes': {constructor: Object,
+                                  opts: {not: "a real opt"},
+                                  args: "nope"}
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set("notes|n1", "Note1", {update: "merge"});
+                    expect(model.get("notes")).to.deep.equal({n1: "Note1"});
+                });
+
+                it('does not pass any args to Array constructor function', function(){
+                    var spec = nestify({
+                        'notes': {constructor: Array,
+                                  opts: {not: "a real opt"},
+                                  args: "nope"}
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    model.set("notes|2", "Note0", {update: "merge"});
+                    // have to infer from empty slots that no args 
+                    // were passed to constructor
+                    expect(model.get("notes")).to.deep.equal([unDfynd, unDfynd, "Note0"]);
+                });
+
+                it('can contain nestify opts for just that container', function(){
+                    var spec = nestify({
+                        'notes':{constructor:Array,
+                                 opts: {update:"merge"},
+                        'nopes': Array}
+                    });
+                    var model = _.extend(new Backbone.Model(), spec);
+                    // updated with 'merge'
+                    model.set("notes|0", "Note0");
+                    model.set("notes|1", "Note1");
+                    expect(model.get("notes")).to.deep.equal(["Note0","Note1"]);
+                    // updated with 'reset' rather than 'merge'
+                    model.set("nopes", []);
+                    model.set("nopes|0", "Nope0");
+                    model.set("nopes|1", "Nope1");
+                    expect(model.get("nopes")).to.deep.equal([null,"Nope1"]);
+                });
+
             });
 
             /**

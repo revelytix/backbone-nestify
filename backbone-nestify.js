@@ -342,6 +342,11 @@
             return result;
         },
 
+        /** true if Model or Collection; false otherwise */
+        isBackbone: function(type){
+            return _.contains(["model", "collection"], type);
+        },
+
         /**
          * Iterate through the list of specs; return the 'container' fn of the
          * first one that is a match for the indicated attribute.
@@ -542,18 +547,21 @@
          * which, when invoked, returns a newly-constructed container.
          */
         compileConstructorFn: function(spec, type){
-            var invokeWithNew = _core.existy(type);
+            var invokeWithNew = _core.existy(type),
+                isBackbone = _container.isBackbone(type);
 
             // Thunkify construction of new container; it may not be needed
             return function(v, opts, att, m){
+                //TODO array of args?
                 var container = invokeWithNew ? 
+                        isBackbone ?
                         new spec.constructor(spec.args, opts) : 
-                        spec.constructor(spec.args, opts, att, m); //TODO args?
+                        new spec.constructor() :
+                        spec.constructor(spec.args, opts, att, m); 
 
                 if (spec.spec){
                     _.extend(container, mixinFn(spec.spec));
                 } 
-                container.set(v, opts);
 
                 return container;
             };
@@ -582,23 +590,21 @@
                 constructorFn = this.compileConstructorFn(spec, containerType),
                 defaultUpdater = _updater.defaults[containerType];
 
-            return function(v, existing, options, att, m){
-                if (existing){
-                    var update = options.update || defaultUpdater;
-                    containerType = containerType || _container.determineType(v);
-                    // TODO log warning if containerType still falsey at this point
-                    updaterHash = updaterHash || _updater[containerType];
-                    return updaterHash[update](existing, v, options);
-                } else {
-                    return constructorFn(v, options);
-                }
+            return function(v, existing, options/*, att, m*/){
+                var container = existing ? existing : constructorFn(v, options);
+                containerType = containerType || _container.determineType(container);
+                defaultUpdater = defaultUpdater || _updater.defaults[containerType];
+                var update = options.update || defaultUpdater;
+                // TODO log warning if containerType still falsey at this point
+                updaterHash = updaterHash || _updater[containerType];
+                return updaterHash[update](container, v, options);
             };
         },
 
         compileExistingContainerFn: function(type){
             var updaterHash = _updater[type],
                 defaultUpdater = _updater.defaults[type];
-            return function(v, existing, options, att, m){
+            return function(v, existing, options/*, att, m*/){
                 var update = options.update || defaultUpdater;
                 return updaterHash[update](existing, v, options);
             };
