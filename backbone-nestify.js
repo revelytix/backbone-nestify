@@ -586,17 +586,15 @@
             spec = _.isFunction(spec) ? {constructor:spec} : spec;
 
             var containerType = this.determineTypeFromConstructor(spec.constructor),
-                updaterHash = containerType && _updater[containerType],
-                constructorFn = this.compileConstructorFn(spec, containerType),
-                defaultUpdater = _updater.defaults[containerType];
+                constructorFn = this.compileConstructorFn(spec, containerType);
 
             return function(v, existing, options/*, att, m*/){
+                options = spec.opts ? _.extend({}, options, spec.opts) : options;
                 var container = existing ? existing : constructorFn(v, options);
                 containerType = containerType || _container.determineType(container);
-                defaultUpdater = defaultUpdater || _updater.defaults[containerType];
-                var update = options.update || defaultUpdater;
                 // TODO log warning if containerType still falsey at this point
-                updaterHash = updaterHash || _updater[containerType];
+                var update = options.update || _updater.defaults[containerType],
+                    updaterHash = _updater[containerType];
                 return updaterHash[update](container, v, options);
             };
         },

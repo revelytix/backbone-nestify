@@ -275,6 +275,8 @@ var mixin = nestify(spec, {delim:"."});
 shoppingCart.get("pending.items.0.itemID", {delim:"."});
 ```
 
+* Using the [advanced spec](#advanced-spec/general-form) capabilities, options can be overridden on a per-[container](#containers) basis. These options have the highest precedence, overriding options from either of the two previous means.
+
 ### delim
 
 The `delim` option can be used to specify the delimeter to use in the stringified syntax. By default this delimiter is the pipe character `|`.
@@ -439,8 +441,10 @@ The general spec form has the following structure (in pseudo-BNF):
 
 <container>   ::= <constructor>
                 | {constructor: <constructor>,
-                   args       : <arguments to constructor>, // optional 
-                   spec       : <speclist>                  // optional
+                   args       : <arguments to constructor>,       // optional 
+                   opts       : <options to Backbone container 
+                                 constructor and/or nestify>,     // optional 
+                   spec       : <speclist>                        // optional
 
 <constructor> ::= <Backbone Model constructor function> 
                 | <Backbone Collection constructor function>
@@ -528,7 +532,9 @@ The [basics of containers](#containers) have already been covered. The general s
 
 ### Constructor
 
-A **constructor** is a JavaScript function which produces a container value. A constructor function can be any container constructor function or a custom (non-constructor) function.
+A **constructor** is a JavaScript function which produces a new container value. A constructor function can be any container constructor function or a custom (non-constructor) function.
+
+Constructors come into play whenever a [set](http://backbonejs.org/#Model-set) is being performed. Nestify will always use any _existing_ nested containers that it encounters as it sets value(s) into the top-level nestified Model. The constructor can be thought of as specifying how to automatically create _new_ container values where non exist but are needed to complete the set operation.
 
 So far, examples have only shown an _implied_ constructor value by pairing the `container` attribute with a Backbone Model or Collection constructor:
 
@@ -544,6 +550,8 @@ This is equivalent to the general form, which makes explicit the constructor:
  {constructor: OrdersCollection}
 }
 ```
+
+_Note:_ The Nestify `set` algorithm will first instantiate the container via the constructor, and then set value(s) on them. So the purpose of the constructor should be thought of as producing an _empty_ new container, ready to receive values (as specified in the [update](#options/update) option).
 
 #### Model or Collection
 
@@ -573,6 +581,24 @@ var spec = [{match: "account",
                          spec: {rewards: RewardCollection}
                         }];
 ```
+
+Backbone Model or Collection constructor functions are passed up to two arguments at construction time: the `spec.args` (if supplied), and the `spec.opts` (if supplied).
+
+#### Array or Object
+
+A [container](#containers) can be a simple Array or Object. In fact this happens automatically (mimicking Backbone's default behavior) if no container is specified for an attribute.
+
+You may wish to explicitly specify an Array or Object container if you want to take advantage of the options available in the general spec form. For example, you may want to specify an Array container that is _always_ updated with the `merge` option (rather than its default `reset` option, see [update:reset](#options/update/reset)):
+
+```javascript
+// 'notes' is, say, a simple Array of Strings
+var spec = [{match: "notes",
+             container: {constructor: Array,
+                         opts: {update: "merge"}
+                        }];
+```
+
+Array or Object constructor functions are passed no arguments at construction time.
 
 #### Function
 
@@ -604,6 +630,8 @@ var spec = [{match: "account",
              }
             }];
 ```
+
+The function will be passed the following parameters: the `value`, `opts`, the String `attribute`, the top-level nestified `model`. It should return a valid (and presumably empty) Nestify [container](#containers), which will then have value(s) set on it according to the [update option](#options/update).
 
 The function will _not_ be invoked using the `new` keyword.
 

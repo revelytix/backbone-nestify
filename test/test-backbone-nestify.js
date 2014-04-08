@@ -1363,7 +1363,7 @@
                     model.set("nopes", []);
                     model.set("nopes|0", "Nope0");
                     model.set("nopes|1", "Nope1");
-                    expect(model.get("nopes")).to.deep.equal([null,"Nope1"]);
+                    expect(model.get("nopes")).to.deep.equal([,"Nope1"]);
                 });
 
             });
