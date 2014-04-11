@@ -1348,6 +1348,7 @@
                     expect(model.get("notes")).to.deep.equal([unDfynd, unDfynd, "Note0"]);
                 });
 
+                /** TODO this feature is undocumented and subject to change */
                 it('can contain nestify opts for just that container', function(){
                     var spec = nestify({
                         'notes':{constructor:Array,

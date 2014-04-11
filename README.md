@@ -275,8 +275,6 @@ var mixin = nestify(spec, {delim:"."});
 shoppingCart.get("pending.items.0.itemID", {delim:"."});
 ```
 
-* Using the [advanced spec](#advanced-spec/general-form) capabilities, options can be overridden on a per-[container](#containers) basis. These options have the highest precedence, overriding options from either of the two previous means.
-
 ### delim
 
 The `delim` option can be used to specify the delimeter to use in the stringified syntax. By default this delimiter is the pipe character `|`.
@@ -442,8 +440,7 @@ The general spec form has the following structure (in pseudo-BNF):
 <container>   ::= <constructor>
                 | {constructor: <constructor>,
                    args       : <arguments to constructor>,       // optional 
-                   opts       : <options to Backbone container 
-                                 constructor and/or nestify>,     // optional 
+                   opts       : <options to Backbone>             // optional 
                    spec       : <speclist>                        // optional
 
 <constructor> ::= <Backbone Model constructor function> 
