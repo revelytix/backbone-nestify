@@ -3,8 +3,8 @@
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Backbone [Models](http://backbonejs.org/#Model) and [Collections](http://backbonejs.org/#Collection). It depends only on Backbone and [Underscore](http://underscorejs.org/). 
 
 ## Download
-* [0.3.0 release](dist/backbone-nestify-0.3.0.min.js?raw=true) - minified, 6kb
-* [0.3.0 release](dist/backbone-nestify-0.3.0.js?raw=true) - 28 kb
+* [0.4.0 release](dist/backbone-nestify-0.4.0.min.js?raw=true) - minified, 7kb
+* [0.4.0 release](dist/backbone-nestify-0.4.0.js?raw=true) - 30 kb
 
 ## Features
 
@@ -691,11 +691,16 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
 
 ### 0.4.0 
 
-#### Xxx xx, 2014
+#### Apr 11, 2014
 
+* Grunt mocha task now tests against multiple versions of Backbone (currently: 1.0.0, 1.1.2).
+* Bug fix - correct the instantiation of a non-Backbone container (i.e. simple Object or Array).
 * Bug fix (issue #2) - nestify.auto() should not create spurious properties on nested Models.
 * Bug fix (issue #3) - nestify.auto() should not assume arrays always contain nested objects.
 * Bug fix (issue #4) - only parse simple integer values as indices out of stringified getter/setter strings.
+* Create release checklist
+* Create Changelog (issue #1).
+* Update copyright year to 2014.
 
 ### 0.3.0 
 
