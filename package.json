@@ -6,13 +6,14 @@
         "test": "mocha"
     },
     "dependencies": {
-        "underscore": "1.5.2",
-        "backbone": "1.0.0"
+        "underscore": ">= 1.5.2",
+        "backbone": ">= 1.0.0"
     },
     "devDependencies": {
-        "grunt": "~0.4.1",
+        "grunt": "~0.4.4",
         "chai": "~1.8.0",
         "mocha": "~1.13.0",
+        "mockery": "1.4.0",
         "grunt-contrib-jshint": "~0.6.4",
         "grunt-mocha-test": "~0.7.0",
         "grunt-contrib-concat": "~0.3.0",

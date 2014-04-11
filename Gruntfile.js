@@ -1,4 +1,19 @@
 /*global module:false*/
+var path = require('path');
+var mockery = require('mockery');
+mockery.enable({
+    warnOnReplace: false,
+    warnOnUnregistered: false
+});
+var resolve = path.resolve;
+/**
+ * resolve, require and return the indicated file module
+ */
+var _fileMod = function(mod){
+    mod = resolve(mod);
+    return require(mod);
+};
+
 module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -30,11 +45,45 @@ module.exports = function(grunt) {
             }
         },
         mochaTest: {
-            test: {
+            test_backbone_1_0_0: {
                 options: {
-                    ui: 'bdd'
+                    ui: 'bdd',
+                    clearRequireCache: true,
+                    require: [
+                        /**
+                         * Hack to plug into 'mockery' and force the
+                         * use of specific versions of underscore and
+                         * backbone during test run
+                         */
+                        function(){
+                            var test_ = _fileMod('test/vendor/underscore-1.5.2.min.js'),
+                                testBB = _fileMod('test/vendor/backbone-1.0.0.min.js');
+                            mockery.registerMock('underscore', test_);
+                            mockery.registerMock('backbone', testBB);
+                        }
+                    ]
                 },
-                src: ['test/**/*.js']
+                src: ['test/*.js']
+            },
+            test_backbone_1_1_2: {
+                options: {
+                    ui: 'bdd',
+                    clearRequireCache: true,
+                    require: [
+                        /**
+                         * Hack to plug into 'mockery' and force the
+                         * use of specific versions of underscore and
+                         * backbone during test run
+                         */
+                        function(){
+                            var test_ = _fileMod('test/vendor/underscore-1.6.0.min.js'),
+                                testBB = _fileMod('test/vendor/backbone-1.1.2.min.js');
+                            mockery.registerMock('underscore', test_);
+                            mockery.registerMock('backbone', testBB);
+                        }
+                    ]
+                },
+                src: ['test/*.js']
             }
         },
         concat: {
