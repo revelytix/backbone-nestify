@@ -2,6 +2,7 @@
 
 * (optional) update copyright year (`LICENSE`, `package.json`)
 * update `README` changelog
+* (optional) backup `node_module`; fresh install with `npm install`
 * create dist:
 
     grunt dist
