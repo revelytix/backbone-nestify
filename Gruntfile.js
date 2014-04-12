@@ -1,7 +1,8 @@
 /*global module:false*/
-var path = require('path');
-var mockery = require('mockery');
-var resolve = path.resolve;
+var path = require('path'),
+    mockery = require('mockery'),
+    resolve = path.resolve;
+
 /**
  * resolve, require and return the indicated file module
  */
@@ -97,8 +98,7 @@ module.exports = function(grunt) {
                                 if ('enable' === this.target){
                                     mockery.enable({
                                         warnOnReplace: false,
-                                        warnOnUnregistered: false,
-                                        useCleanCache: true
+                                        warnOnUnregistered: false
                                     });
                                 } else {
                                     mockery.disable();
@@ -129,16 +129,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
 
-    grunt.registerTask('default', ['jshint', 'mochaTest']);
-    grunt.registerTask('dist', ['jshint', 'mochaTest', 'concat', 'uglify']);
-
-/* WIP
     grunt.registerTask('default', ['jshint', 'mockery:enable', 'mochaTestWith', 'mockery:disable']);
     grunt.registerTask('dist', ['jshint', 'mockery:enable', 'mochaTestWith', 'mockery:disable', 'concat', 'uglify']);
 
-    grunt.registerTask('foo', 'Foo', function(){
-        grunt.task.run('mochaTest');
-        grunt.task.run('mochaTest'); // TODO why won't tests run a second time?
-    });
- */
 };
