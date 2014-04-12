@@ -1,10 +1,6 @@
 /*global module:false*/
 var path = require('path');
 var mockery = require('mockery');
-mockery.enable({
-    warnOnReplace: false,
-    warnOnUnregistered: false
-});
 var resolve = path.resolve;
 /**
  * resolve, require and return the indicated file module
@@ -44,48 +40,33 @@ module.exports = function(grunt) {
                 }
             }
         },
+
+        mockery: {
+            enable: "",
+            disable: ""
+        },
+
         mochaTest: {
-            test_backbone_1_0_0: {
+            test_nestify: {
                 options: {
                     ui: 'bdd',
-                    clearRequireCache: true,
-                    require: [
-                        /**
-                         * Hack to plug into 'mockery' and force the
-                         * use of specific versions of underscore and
-                         * backbone during test run
-                         */
-                        function(){
-                            var test_ = _fileMod('test/vendor/underscore-1.5.2.min.js'),
-                                testBB = _fileMod('test/vendor/backbone-1.0.0.min.js');
-                            mockery.registerMock('underscore', test_);
-                            mockery.registerMock('backbone', testBB);
-                        }
-                    ]
-                },
-                src: ['test/*.js']
-            },
-            test_backbone_1_1_2: {
-                options: {
-                    ui: 'bdd',
-                    clearRequireCache: true,
-                    require: [
-                        /**
-                         * Hack to plug into 'mockery' and force the
-                         * use of specific versions of underscore and
-                         * backbone during test run
-                         */
-                        function(){
-                            var test_ = _fileMod('test/vendor/underscore-1.6.0.min.js'),
-                                testBB = _fileMod('test/vendor/backbone-1.1.2.min.js');
-                            mockery.registerMock('underscore', test_);
-                            mockery.registerMock('backbone', testBB);
-                        }
-                    ]
+                    clearRequireCache: true
                 },
                 src: ['test/*.js']
             }
         },
+
+        "mochaTestWith": {
+            backbone1_1_2: {
+                underscore: 'test/vendor/underscore-1.6.0.min.js',
+                backbone: 'test/vendor/backbone-1.1.2.min.js'
+            },
+            backbone1_0_0: {
+                underscore: 'test/vendor/underscore-1.5.2.min.js',
+                backbone: 'test/vendor/backbone-1.0.0.min.js'
+            }
+        },
+
         concat: {
             options: {
                 banner: '/* <%= pkg.name %> <%= pkg.version %> <%= grunt.template.today("yyyy-mm-dd") %>' +
@@ -111,6 +92,38 @@ module.exports = function(grunt) {
         }
     });
 
+    grunt.registerMultiTask('mockery', 'enable/disable mockery',
+                            function(){
+                                if ('enable' === this.target){
+                                    mockery.enable({
+                                        warnOnReplace: false,
+                                        warnOnUnregistered: false,
+                                        useCleanCache: true
+                                    });
+                                } else {
+                                    mockery.disable();
+                                }
+                            });
+
+    grunt.registerTask('test-modules', 
+                       'Fix the version of underscore and backbone to be tested with',
+                       function(ver_, verBB){
+                           var test_ = _fileMod(ver_),
+                               testBB = _fileMod(verBB);
+                           mockery.registerMock('underscore', test_);
+                           mockery.registerMock('backbone', testBB);
+                       });
+
+    grunt.registerMultiTask('mochaTestWith',
+                            'mochaTest with specific test modules',
+                            function(){
+                                var u = this.data.underscore,
+                                    b = this.data.backbone;
+                                grunt.task.run('mockery:enable');
+                                grunt.task.run('test-modules:'+u+':'+b);
+                                grunt.task.run('mochaTest');
+                            });
+
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-contrib-concat');
@@ -118,4 +131,14 @@ module.exports = function(grunt) {
 
     grunt.registerTask('default', ['jshint', 'mochaTest']);
     grunt.registerTask('dist', ['jshint', 'mochaTest', 'concat', 'uglify']);
+
+/* WIP
+    grunt.registerTask('default', ['jshint', 'mockery:enable', 'mochaTestWith', 'mockery:disable']);
+    grunt.registerTask('dist', ['jshint', 'mockery:enable', 'mochaTestWith', 'mockery:disable', 'concat', 'uglify']);
+
+    grunt.registerTask('foo', 'Foo', function(){
+        grunt.task.run('mochaTest');
+        grunt.task.run('mochaTest'); // TODO why won't tests run a second time?
+    });
+ */
 };
