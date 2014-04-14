@@ -1,6 +1,6 @@
-/* backbone-nestify 0.3.0 2014-01-28
+/* backbone-nestify 0.4.0 2014-04-11
  * http://revelytix.github.io/backbone-nestify/
- * Copyright 2013 Revelytix, Inc. All rights reserved. */
+ * Copyright 2014 Revelytix, Inc. All rights reserved. */
 /**
  * A mixin for models with nested models; overrides 'get' and 'set'
  * methods, deals properly with getting/setting raw attributes 
@@ -24,145 +24,188 @@
     }
 }(function(_, Backbone) {
 
-    /**
-     * Returns false for null or undefined, true for everything
-     * else.
-     * (by @fogus)
-     */
-    var existy = function(x){
-        /*
-         * Important here to use '!=' rather than '!==', so that
-         * undefined values will be coerced and correctly reported
-         * as not existy.
+
+    var _slice = Array.prototype.slice;
+
+    var _core = {
+
+        /**
+         * Returns false for null or undefined, true for everything
+         * else.
+         * (by @fogus)
          */
-        return x != null;
-    };
-
-    /**
-     * Default options
-     */
-    var _defaultOpts = {
-        coll: "at", // possible values are "reset", "set", "at"
-        delim: "|" // default delimiter is a pipe character
-    };
-
-    /**
-     * Looks up the proper nested Backbone Model or Collection,
-     * based on the path represented by the keys array. Numbers
-     * are interpreted as indices into a Collection, otherwise the
-     * String value is interpreted as an attribute of a nested
-     * Model.
-     * @param keys array of Strings and or Ints, representing a
-     * path to a nested attribute.
-     * @param model Backbone.Model to begin the search with
-     * @return undefined if nothing found for that path.
-     */
-    var _lookup_path = function(keys, model){
-
-        return _.reduce(keys, function(m, k){
-            var nextM;
-
-            if(m) {
-
-                if (_.isNumber(k)){
-                    nextM = (m instanceof Backbone.Collection ? m.at(k) : m[k]);
-                } else {
-                    nextM = (m instanceof Backbone.Model ? m.attributes[k] : m[k]);
-                }
-
-                /*if (!nextM && (k !== _.last(keys))){
-                 // attr not found at path; log to help diagnose
-                 console.log("**WARNING** no attribute at key '" + k + "' of path '" + keys + "' for model\n" + model.dbg());
-                 }*/
-            }
-
-            return nextM;
-        }, model);
-    };
-
-    /**
-     * Given an array of Strings, return an array with the same
-     * contents, only with any numbers converted into proper Integers.
-     */
-    var _withProperNums = function(keys){
-        return _.map(keys, function(value){
-            var mn = parseInt(value, 10); 
-            return (_.isNaN(mn) ? value : mn);
-        });
-    };
-
-    /**
-     * If the property key is a delimited string such as
-     * <code>'foo|bar|0|baz'</code>
-     * then return an array of Strings, converting any String
-     * numbers into proper Integers:
-     * <code>['foo', 'bar', 0, 'baz']
-     */
-    var _delimitedStringToArray = function(key, opts){
-        var _delim = opts.delim;
-        return (_.isString(key) && key.indexOf(_delim) > -1) ? _withProperNums(key.split(_delim)) : key;
-    };
-
-    /**
-     * Converts a path of key(s) and a value to Object
-     * form. Nested simple objects and/or arrays will be created
-     * as necessary.
-     * 
-     * Example:
-     *
-     * <code>
-     * _toObj(["foo", 2, "bar"], "baz");
-     * </code>
-     * returns
-     * <code>
-     * {foo: [undefined, undefined, {bar: "baz}]}
-     * </code>
-     * note the nested array and object are created automatically
-     *
-     * @param path may be a
-     * (1) simple String
-     * (2) array of Strings or Ints
-     * (3) object other than an array
-     * @param value a simple value (not an object or array)
-     * @return 
-     * if path is (1) return {path: value}
-     * if path is (2) build up Object
-     * if path is (3), return path unmodified
-     */
-    var _toObj = function(path, value){
-        var result;
-        if (_.isObject(path) && !(_.isArray(path))){
-            result = path;
-        } else if ((_.isArray(path) || _.isString(path))){
-
-            // wrap single string in array, if necessary
-            path = (_.isArray(path) ? path : [path]);
-
-            /** 
-             * Build up result object by traversing array from
-             * right-to-left; start by pairing the value with the
-             * path from the rightmost array slot. If 'key' is a
-             * number, create a new array, otherwise create a new
-             * object.
+        existy: function(x){
+            /*
+             * Important here to use '!=' rather than '!==', so that
+             * undefined values will be coerced and correctly reported
+             * as not existy.
              */
-            result = _.reduceRight(path, function(obj, key){
-                var newObj;
-                if (_.isNumber(key)){
-                    newObj = [];
-                } else {
-                    newObj = {};
-                }
-                newObj[key] = obj;
-                return newObj;
-            }, value);
-        }
-        return result;
-    };
+            return x != null;
+        },
 
-    var _assertArray = function(a){
-        // TODO proper assert
-        if (!(_.isArray(a))){
-            console.log("**WARNING**! expected array but found: " + JSON.stringify(a));
+        /**
+         * Default options
+         */
+        defaultOpts: {
+            coll: "at", // possible values are "reset", "set", "at"
+            delim: "|" // default delimiter is a pipe character
+        },
+
+        /**
+         * Looks up the proper nested Backbone Model or Collection,
+         * based on the path represented by the keys array. Numbers
+         * are interpreted as indices into a Collection, otherwise the
+         * String value is interpreted as an attribute of a nested
+         * Model.
+         * @param keys array of Strings and or Ints, representing a
+         * path to a nested attribute.
+         * @param model Backbone.Model to begin the search with
+         * @return undefined if nothing found for that path.
+         */
+        lookupPath: function(keys, model){
+            return _.reduce(keys, function(m, k){
+                var nextM;
+
+                if(m) {
+
+                    if (_.isNumber(k)){
+                        nextM = (m instanceof Backbone.Collection ? m.at(k) : m[k]);
+                    } else {
+                        nextM = (m instanceof Backbone.Model ? m.attributes[k] : m[k]);
+                    }
+
+                    /*if (!nextM && (k !== _.last(keys))){
+                     // attr not found at path; log to help diagnose
+                     console.log("**WARNING** no attribute at key '" + k + "' of path '" + keys + "' for model\n" + model.dbg());
+                     }*/
+                }
+
+                return nextM;
+            }, model);
+        },
+
+        properNum: function(value){
+            return (/^([0-9]+)$/.test(value)) ? parseInt(value, 10) : value;
+        },
+
+        /**
+         * Given an array of Strings, return an array with the same
+         * contents, only with any numbers converted into proper Integers.
+         */
+        withProperNums: function(keys){
+            return _.map(keys, _core.properNum);
+        },
+
+        /**
+         * If the property key is a delimited string such as
+         * <code>'foo|bar|0|baz'</code>
+         * then return an array of Strings, converting any String
+         * numbers into proper Integers:
+         * <code>['foo', 'bar', 0, 'baz']
+         */
+        delimitedStringToArray: function(key, opts){
+            var _delim = opts.delim;
+            return (_.isString(key) && key.indexOf(_delim) > -1) ? _core.withProperNums(key.split(_delim)) : key;
+        },
+
+        /**
+         * Converts a path of key(s) and a value to Object
+         * form. Nested simple objects and/or arrays will be created
+         * as necessary.
+         * 
+         * Example:
+         *
+         * <code>
+         * _toObj(["foo", 2, "bar"], "baz");
+         * </code>
+         * returns
+         * <code>
+         * {foo: [undefined, undefined, {bar: "baz}]}
+         * </code>
+         * note the nested array and object are created automatically
+         *
+         * @param path may be a
+         * (1) simple String
+         * (2) array of Strings or Ints
+         * (3) object other than an array
+         * @param value a simple value (not an object or array)
+         * @return 
+         * if path is (1) return {path: value}
+         * if path is (2) build up Object
+         * if path is (3), return path unmodified
+         */
+        toObj: function(path, value){
+            var result;
+            if (_.isObject(path) && !(_.isArray(path))){
+                result = path;
+            } else if ((_.isArray(path) || _.isString(path))){
+
+                // wrap single string in array, if necessary
+                path = (_.isArray(path) ? path : [path]);
+
+                /** 
+                 * Build up result object by traversing array from
+                 * right-to-left; start by pairing the value with the
+                 * path from the rightmost array slot. If 'key' is a
+                 * number, create a new array, otherwise create a new
+                 * object.
+                 */
+                result = _.reduceRight(path, function(obj, key){
+                    var newObj;
+                    if (_.isNumber(key)){
+                        newObj = [];
+                    } else {
+                        newObj = {};
+                    }
+                    newObj[key] = obj;
+                    return newObj;
+                }, value);
+            }
+            return result;
+        },
+
+        assertArray: function(a){
+            // TODO proper assert
+            if (!(_.isArray(a))){
+                console.log("**WARNING**! expected array but found: " + JSON.stringify(a));
+            }
+        },
+
+        /**
+         * The input 'setAttributes' is an Object; reduce over it to
+         * produce an equivalent Object with existing nested Backbone
+         * Models or other objects in the right places.
+         * @param this a Backbone.Model having this mixin
+         * @param spec currently, a hash of String model
+         * attribute names, mapped to the constructor which must be
+         * used to instantiate a new nested Backbone model for that
+         * attribute. (see Example Usage doc)
+         * @param setAttributes the raw input Object which is to be
+         * transformed and made ready to be set on the model
+         * @param opts (optional) options to the 'set' method
+         * @return prepared 'set attributes' ready to be set on the
+         * Backbone model
+         */ 
+        prepAttributes: function(spec, setAttributes, opts){
+
+            opts = opts || {};
+
+            /**
+             * The input 'setAttributes' is unmodified input; reduce over it to
+             * produce an equivalent object with existing nested backbone
+             * models or other objects in the right places. Then set that on 
+             * the model.
+             */ 
+            setAttributes = _.reduce(setAttributes, function(preppedAtts, v, k){
+
+                var existing = (this.attributes && this.attributes[k]),
+                    containerFn = _container.findContainerFn(spec, k, v, existing, opts);
+                preppedAtts[k] = containerFn(v, existing, opts, k, this);
+
+                return preppedAtts;
+            }, {}, this);
+
+            return setAttributes;
         }
     };
 
@@ -203,7 +246,7 @@
         useUnmodified: function(att, v, existing, opts){
             return (this.isModel(att, v) ||
                     this.isCollection(att, v) ||
-                    (opts.unset && !existy(v)));
+                    (opts.unset && !_core.existy(v)));
         },
 
         isModel: function(att, v){
@@ -226,6 +269,10 @@
             return _.isArray(v);
         },
        
+        isArrayOfObjects: function(att, v){
+            return _.isArray(v) && _.every(v, _.isObject);
+        },
+       
         isExistingArray: function(att, v, existing){
             return _.isArray(existing);
         },
@@ -236,8 +283,45 @@
 
         isExistingObject: function(att, v, existing){
             return _.isObject(existing);
-        }
+        },
 
+        /**
+         * compose matcher functions together into a single matcher
+         * function that "and"'s them all.
+         */
+        and: function(){
+            var fns = _slice.call(arguments);
+            return function(){
+                var args = _slice.call(arguments);
+                return _.reduce(fns, function(result, fn){
+                    return (result && fn.apply(this, args));
+                }, true, this);
+            };
+        },
+
+        /**
+         * compose matcher functions together into a single matcher
+         * function that "or"'s them all.
+         */
+        or: function(){
+            var fns = _slice.call(arguments);
+            return function(){
+                var args = _slice.call(arguments);
+                return _.reduce(fns, function(result, fn){
+                    return (result || fn.apply(this, args));
+                }, false, this);
+            };
+        },
+
+        /**
+         * Return a matcher function that is the negation of the
+         * supplied matcher function.
+         */
+        not: function(fn){
+            return function(){
+                return !fn.apply(this, arguments);
+            };
+        }
     };
     _.bindAll(_matchers, "useUnmodified");
 
@@ -259,6 +343,11 @@
                 result = "object";
             } 
             return result;
+        },
+
+        /** true if Model or Collection; false otherwise */
+        isBackbone: function(type){
+            return _.contains(["model", "collection"], type);
         },
 
         /**
@@ -336,7 +425,7 @@
              * Collection 'reset' method.
              */
             reset: function(coll, atts, opts){
-                _assertArray(atts);
+                _core.assertArray(atts);
                 var Constructor = coll.model;
                 coll.reset(_.map(atts, function(att){
                     return new Constructor(att, opts);
@@ -355,7 +444,7 @@
              * or Model 'set' method
              */
             smartMerge: function(coll, atts, opts){
-                _assertArray(atts);
+                _core.assertArray(atts);
                 var Constructor = coll.model;
                 coll.set(_.map(atts, function(att){
                     return new Constructor(att, opts);
@@ -367,7 +456,7 @@
              * Default behavior, update nested collection index-based.
              */
             merge: function(coll, atts, opts){
-                _assertArray(atts);
+                _core.assertArray(atts);
                 var Constructor = coll.model;
                 var alist = _.zip(coll.models, atts);
                 _.each(alist, function(pair, i){
@@ -427,43 +516,6 @@
         }
     };
 
-    /**
-     * The input 'setAttributes' is an Object; reduce over it to
-     * produce an equivalent Object with existing nested Backbone
-     * Models or other objects in the right places.
-     * @param this a Backbone.Model having this mixin
-     * @param spec currently, a hash of String model
-     * attribute names, mapped to the constructor which must be
-     * used to instantiate a new nested Backbone model for that
-     * attribute. (see Example Usage doc)
-     * @param setAttributes the raw input Object which is to be
-     * transformed and made ready to be set on the model
-     * @param opts (optional) options to the 'set' method
-     * @return prepared 'set attributes' ready to be set on the
-     * Backbone model
-     */ 
-    var _prepAttributes  = function(spec, setAttributes, opts){
-
-        opts = opts || {};
-
-        /**
-         * The input 'setAttributes' is unmodified input; reduce over it to
-         * produce an equivalent object with existing nested backbone
-         * models or other objects in the right places. Then set that on 
-         * the model.
-         */ 
-        setAttributes = _.reduce(setAttributes, function(preppedAtts, v, k){
-
-            var existing = (this.attributes && this.attributes[k]),
-                containerFn = _container.findContainerFn(spec, k, v, existing, opts);
-            preppedAtts[k] = containerFn(v, existing, opts, k, this);
-
-            return preppedAtts;
-        }, {}, this);
-
-        return setAttributes;
-    };
-
 
     /**
      * Produces an internally optimized version of the spec.
@@ -498,21 +550,21 @@
          * which, when invoked, returns a newly-constructed container.
          */
         compileConstructorFn: function(spec, type){
-            var invokeWithNew = existy(type);
+            var invokeWithNew = _core.existy(type),
+                isBackbone = _container.isBackbone(type);
 
             // Thunkify construction of new container; it may not be needed
             return function(v, opts, att, m){
+                //TODO array of args?
                 var container = invokeWithNew ? 
+                        isBackbone ?
                         new spec.constructor(spec.args, opts) : 
-                        spec.constructor(spec.args, opts, att, m); //TODO args?
+                        new spec.constructor() :
+                        spec.constructor(spec.args, opts, att, m); 
 
-                /* Here's where that undocumented flag gets detected. */
-                if (spec.spec === "recurse"){
-                    _.extend(container, opts.compiled);
-                } else if (spec.spec){
+                if (spec.spec){
                     _.extend(container, mixinFn(spec.spec));
                 } 
-                container.set(v, opts);
 
                 return container;
             };
@@ -537,27 +589,23 @@
             spec = _.isFunction(spec) ? {constructor:spec} : spec;
 
             var containerType = this.determineTypeFromConstructor(spec.constructor),
-                updaterHash = containerType && _updater[containerType],
-                constructorFn = this.compileConstructorFn(spec, containerType),
-                defaultUpdater = _updater.defaults[containerType];
+                constructorFn = this.compileConstructorFn(spec, containerType);
 
-            return function(v, existing, options, att, m){
-                if (existing){
-                    var update = options.update || defaultUpdater;
-                    containerType = containerType || _container.determineType(v);
-                    // TODO log warning if containerType still falsey at this point
-                    updaterHash = updaterHash || _updater[containerType];
-                    return updaterHash[update](existing, v, options);
-                } else {
-                    return constructorFn(v, options);
-                }
+            return function(v, existing, options/*, att, m*/){
+                options = spec.opts ? _.extend({}, options, spec.opts) : options;
+                var container = existing ? existing : constructorFn(v, options);
+                containerType = containerType || _container.determineType(container);
+                // TODO log warning if containerType still falsey at this point
+                var update = options.update || _updater.defaults[containerType],
+                    updaterHash = _updater[containerType];
+                return updaterHash[update](container, v, options);
             };
         },
 
         compileExistingContainerFn: function(type){
             var updaterHash = _updater[type],
                 defaultUpdater = _updater.defaults[type];
-            return function(v, existing, options, att, m){
+            return function(v, existing, options/*, att, m*/){
                 var update = options.update || defaultUpdater;
                 return updaterHash[update](existing, v, options);
             };
@@ -688,7 +736,7 @@
      */
     var mixinFn = _.extend(function(spec, options){
 
-        var _moduleOpts = _.extend({}, _defaultOpts, options);
+        var _moduleOpts = _.extend({}, _core.defaultOpts, options);
         spec = _compiler.compile(spec, _moduleOpts);
 
         return {
@@ -707,9 +755,9 @@
              */
             get: function(keys, opts){
                 opts = _.extend({}, _moduleOpts, opts);
-                keys = _delimitedStringToArray(keys, opts);
+                keys = _core.delimitedStringToArray(keys, opts);
                 if (_.isArray(keys)){
-                    return _lookup_path(keys, this);
+                    return _core.lookupPath(keys, this);
                 } else {
                     return Backbone.Model.prototype.get.apply(this, arguments);
                 }
@@ -736,8 +784,8 @@
                     attrs = keys instanceof Backbone.Model ? keys.attributes : keys;
                 } else {
                     opts = _.extend({}, _moduleOpts, opts);
-                    keys = _delimitedStringToArray(keys, opts);
-                    attrs = _toObj(keys, value);
+                    keys = _core.delimitedStringToArray(keys, opts);
+                    attrs = _core.toObj(keys, value);
                 }
 
                 /**
@@ -745,7 +793,7 @@
                  * passed in, or the case that value is already a Backbone.Model TODO
                  */
                 if (_.isObject(attrs) && !(opts instanceof Backbone.Model)){
-                    attrs = _prepAttributes.call(this, spec, attrs, opts);
+                    attrs = _core.prepAttributes.call(this, spec, attrs, opts);
                 }
 
                 return Backbone.Model.prototype.set.call(this, attrs, opts);
@@ -761,31 +809,29 @@
          * @return a mixin (as if calling nestify() per usual)
          */
         auto:function(opts){
+            opts = opts || {};
 
             // private, anonymous subtypes
-            var M = Backbone.Model.extend(),
+            var M = Backbone.Model.extend(opts.extend),
                 C = Backbone.Collection.extend({model:M});
 
-            /* 
-             * Use this undocumented flag to indicate using the spec
-             * recursively.
-             */
-            var flag = "recurse";
-
             var spec = [{
-                match: _matchers.isArray,
+                match: _matchers.isArrayOfObjects,
                 container: C
             },{
-                match: _matchers.isObject,
-                container: {
-                    constructor: M,
-                    spec: flag
-                }
+                match: _matchers.and(_matchers.isObject, _matchers.not(_matchers.isArray)),
+                container: _.extend({
+                    constructor: M
+                }, opts)
             }];
 
             var compiled = mixinFn(spec, opts);
 
-            // Mix the compiled spec into our anonymous Model subclass
+            /*
+             * Mix the compiled spec into our anonymous Model subclass;
+             * this causes the spec to be in effect recursively for
+             * nested objects and containers.
+             */
             _.extend(M.prototype, compiled);
 
             return compiled;
@@ -812,7 +858,8 @@
         },
 
         // for testing purposes TODO
-        pathToObject: _toObj
+        _pathToObject: _core.toObj,
+        _properNum: _core.properNum
     });
 
     return mixinFn;

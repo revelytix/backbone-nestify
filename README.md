@@ -3,8 +3,8 @@
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Backbone [Models](http://backbonejs.org/#Model) and [Collections](http://backbonejs.org/#Collection). It depends only on Backbone and [Underscore](http://underscorejs.org/). 
 
 ## Download
-* [0.3.0 release](dist/backbone-nestify-0.3.0.min.js?raw=true) - minified, 6kb
-* [0.3.0 release](dist/backbone-nestify-0.3.0.js?raw=true) - 28 kb
+* [0.4.0 release](dist/backbone-nestify-0.4.0.min.js?raw=true) - minified, 7kb
+* [0.4.0 release](dist/backbone-nestify-0.4.0.js?raw=true) - 30 kb
 
 ## Features
 
@@ -439,8 +439,9 @@ The general spec form has the following structure (in pseudo-BNF):
 
 <container>   ::= <constructor>
                 | {constructor: <constructor>,
-                   args       : <arguments to constructor>, // optional 
-                   spec       : <speclist>                  // optional
+                   args       : <arguments to constructor>,       // optional 
+                   opts       : <options to Backbone>             // optional 
+                   spec       : <speclist>                        // optional
 
 <constructor> ::= <Backbone Model constructor function> 
                 | <Backbone Collection constructor function>
@@ -528,7 +529,9 @@ The [basics of containers](#containers) have already been covered. The general s
 
 ### Constructor
 
-A **constructor** is a JavaScript function which produces a container value. A constructor function can be any container constructor function or a custom (non-constructor) function.
+A **constructor** is a JavaScript function which produces a new container value. A constructor function can be any container constructor function or a custom (non-constructor) function.
+
+Constructors come into play whenever a [set](http://backbonejs.org/#Model-set) is being performed. Nestify will always use any _existing_ nested containers that it encounters as it sets value(s) into the top-level nestified Model. The constructor can be thought of as specifying how to automatically create _new_ container values where non exist but are needed to complete the set operation.
 
 So far, examples have only shown an _implied_ constructor value by pairing the `container` attribute with a Backbone Model or Collection constructor:
 
@@ -544,6 +547,8 @@ This is equivalent to the general form, which makes explicit the constructor:
  {constructor: OrdersCollection}
 }
 ```
+
+_Note:_ The Nestify `set` algorithm will first instantiate the container via the constructor, and then set value(s) on them. So the purpose of the constructor should be thought of as producing an _empty_ new container, ready to receive values (as specified in the [update](#options/update) option).
 
 #### Model or Collection
 
@@ -573,6 +578,24 @@ var spec = [{match: "account",
                          spec: {rewards: RewardCollection}
                         }];
 ```
+
+Backbone Model or Collection constructor functions are passed up to two arguments at construction time: the `spec.args` (if supplied), and the `spec.opts` (if supplied).
+
+#### Array or Object
+
+A [container](#containers) can be a simple Array or Object. In fact this happens automatically (mimicking Backbone's default behavior) if no container is specified for an attribute.
+
+You may wish to explicitly specify an Array or Object container if you want to take advantage of the options available in the general spec form. For example, you may want to specify an Array container that is _always_ updated with the `merge` option (rather than its default `reset` option, see [update:reset](#options/update/reset)):
+
+```javascript
+// 'notes' is, say, a simple Array of Strings
+var spec = [{match: "notes",
+             container: {constructor: Array,
+                         opts: {update: "merge"}
+                        }];
+```
+
+Array or Object constructor functions are passed no arguments at construction time.
 
 #### Function
 
@@ -604,6 +627,8 @@ var spec = [{match: "account",
              }
             }];
 ```
+
+The function will be passed the following parameters: the `value`, `opts`, the String `attribute`, the top-level nestified `model`. It should return a valid (and presumably empty) Nestify [container](#containers), which will then have value(s) set on it according to the [update option](#options/update).
 
 The function will _not_ be invoked using the `new` keyword.
 
@@ -661,3 +686,46 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
 
     $ npm install
     $ grunt [dist]
+
+## Changelog
+
+### 0.4.0 
+
+#### Apr 11, 2014
+
+* Grunt mocha task now tests against multiple versions of Backbone (currently: 1.0.0, 1.1.2).
+* Bug fix - correct the instantiation of a non-Backbone container (i.e. simple Object or Array).
+* Bug fix (issue #2) - nestify.auto() should not create spurious properties on nested Models.
+* Bug fix (issue #3) - nestify.auto() should not assume arrays always contain nested objects.
+* Bug fix (issue #4) - only parse simple integer values as indices out of stringified getter/setter strings.
+* Create release checklist
+* Create Changelog (issue #1).
+* Update copyright year to 2014.
+
+### 0.3.0 
+
+#### Jan 28, 2014
+
+* `coll` option is now `update` option. Possible values (which were `reset`, `set` and `at`) are now `reset`, `merge` and `smart`.
+* Documented limitations of nesting primitive Object or Array containers. Collections or Models are recommended.
+* Further internal refactoring - more compiler optimizing; updaters.
+* Bug fix for updating of nested containers which are unspecified.
+* Nestify a populated model instance in-place (alpha; subject to change).
+
+### 0.2.0 
+
+#### Dec 19, 2013
+
+* Top-level `nestify` module function accepts `opts` param; can be overriden with `opts` to `get` or `set`.
+* Introduce configurable delimiter option.
+* Formalize spec general and abbreviated forms.
+* Bug fix: nested Collection length attribute.
+* Internal refactoring, cleanup - compiler, matchers, containers.
+* Switch mocha test runner, tests from 'bdd' to 'qunit'.
+* Auto-nestification into plain Models or Collections without specification (alpha; subject to change).
+
+### 0.1.0 
+
+#### Oct 30, 2013
+
+* Initial release of Revelytix internal version.
