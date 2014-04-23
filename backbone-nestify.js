@@ -840,13 +840,13 @@
          * internal attributes according to the supplied spec.
          * @param modelInstance an existing instance of Backbone.Model
          * (or subclass)
-         * @param spec the usual
-         * @param opts the usual
+         * @param mixin produced by nestify(...)
+         * @param opts (optional) opts to Backbone
          * @return the modelInstance param
          */
-        instance: function(modelInstance, spec, opts){
+        instance: function(modelInstance, mixin, opts){
             if (modelInstance instanceof Backbone.Model) {
-                _.extend(modelInstance, mixinFn(spec, opts));
+                _.extend(modelInstance, mixin);
                 var atts = modelInstance.attributes;
                 modelInstance.attributes = {}; //TODO why is this necessary?
                 modelInstance.set(atts, opts);

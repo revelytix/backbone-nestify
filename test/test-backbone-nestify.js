@@ -1175,6 +1175,79 @@
             });
         });
 
+        describe('nested Collection get(), at(), remove(), length', function(){
+            it("should remove model at, reflect in length attribute", function(){
+                var ctrl = new Backbone.Collection([{id: "1", foo: "Foo"}, 
+                                                    {id: "2", bar: "Bar"}]);
+                expect(ctrl.length).to.equal(2);
+                ctrl.remove(ctrl.at(1));
+                expect(ctrl.length).to.equal(1);
+
+
+                var c = nestify.instance(
+                    new Backbone.Collection([{id: "1", foo: "Foo"}, 
+                                             {id: "2", bar: "Bar"}]),
+                    nestify.auto());
+                expect(c.length).to.equal(2);
+                c.remove(c.at(1));
+                expect(c.length).to.equal(1);
+            });
+
+            // issue #5
+            it("should work on nested Collections", function(){
+                var C = Backbone.Collection.extend(),
+                    M = Backbone.Model.extend(nestify({ms: C}));
+                C.prototype.model = M;
+                var m = new M({ms: [{id: "1", foo: "Foo"}, 
+                                    {id: "2", bar: "Bar"}]}),
+                    c = m.get("ms");
+                expect(c.length).to.equal(2);
+                c.remove(c.at(1));
+                expect(c.length).to.equal(1);
+            });
+
+            // issue #5
+            it("smart merge workaround", function(){
+                var C = Backbone.Collection.extend(),
+                    M = Backbone.Model.extend(nestify({ms: C}));
+                C.prototype.model = M;
+                var m = new M();
+                m.set({ms: [{id: "1", foo: "Foo"}, 
+                            {id: "2", bar: "Bar"}]},
+                     {update: "smart"});
+                var c = m.get("ms");
+                expect(c.length).to.equal(2);
+                c.remove(c.at(1));
+                expect(c.length).to.equal(1);
+            });
+
+            // issue #5
+            it("should work on nested Collections (auto nestify)", function(){
+                var m = nestify.instance(
+                    new Backbone.Model({ms: [{id: "1", foo: "Foo"}, 
+                                             {id: "2", bar: "Bar"}]}),
+                    nestify.auto()),
+                    c = m.get("ms");
+                expect(c.models.length).to.equal(2);
+                expect(c.length).to.equal(2);
+                c.remove(c.at(1));
+                expect(c.models.length).to.equal(1);
+                expect(c.length).to.equal(1);
+            });
+
+            // issue #5
+            it("should not corrupt state of Collection", function(){
+                var m = nestify.instance(
+                    new Backbone.Model({ms: [{id: "1", foo: "Foo"}, 
+                                             {id: "2", bar: "Bar"}]}),
+                    nestify.auto()),
+                    c = m.get("ms"),
+                    m1 = c.at(0);
+                expect(c.get(m1)).to.deep.equal(m1);
+                expect(c.get(m1.id)).to.deep.equal(m1);
+            });
+        });
+
         describe('unspecified Collection', function(){
             it('will still be updated according to "update" option', function(){
 
@@ -1701,14 +1774,14 @@
                 describe('nestify.instance()', function(){
                     it('can nestify an existing Model instance', function(){
                         var model = new Backbone.Model({items: [{name:"monkey"}, {name:"butter"}]});
-                        model = nestify.instance(model, {items: env.Items}, {delim: "."});
+                        model = nestify.instance(model, nestify({items: env.Items}, {delim: "."}));
                         expect(model.get('items')).to.be.an.instanceof(env.Items);
                         expect(model.get('items.0')).to.be.an.instanceof(env.Item);
                         expect(model.get("items.0.name")).to.equal("monkey");
                     });
 
                     it('will safely handle attempting to nestify-instance a non-Model', function(){
-                        nestify.instance("not a model", {items: env.Items});
+                        nestify.instance("not a model", nestify({items: env.Items}));
                     });
                 });
             });

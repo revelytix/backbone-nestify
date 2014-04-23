@@ -689,6 +689,12 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
 
 ## Changelog
 
+### 0.4.1
+
+#### ?, 2014
+
+* The signature of `nestify.instance()` has changed from `nestify.instance(model, spec [, opts])` to `nestify.instance(mode, mixin [, opts])`. In other words, the second parameter should be the mixin itself, rather than the spec which produces a mixin. This could be as simple as doing: `nestify.instance(model, nestify(spec))`.
+
 ### 0.4.0 
 
 #### Apr 11, 2014

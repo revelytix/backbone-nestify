@@ -1,5 +1,6 @@
 # Release checklist (note to self)
 
+* check status of GitHub issue(s) and/or milestone(s)
 * (optional) update copyright year (`LICENSE`, `package.json`)
 * update `README` changelog
 * (optional) backup `node_module`; fresh install with `npm install`
@@ -48,6 +49,8 @@ git checkout master README.md dist
 ```
 git commit -m "gh-pages 0.x.0"
 ```
+
+* close GitHub release milestone, if there is one
 
 # Post-release checklist 
 
