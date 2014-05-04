@@ -51,6 +51,11 @@ git commit -m "gh-pages 0.x.0"
 ```
 
 * close GitHub release milestone, if there is one
+* publish to npmjs.org
+
+```
+npm publish . --tag 0.x.0
+```
 
 # Post-release checklist 
 
@@ -58,3 +63,4 @@ git commit -m "gh-pages 0.x.0"
 
 * increment version number (`package.json`)
 * (optional) update "dev" dist artifacts
+
