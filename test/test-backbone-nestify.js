@@ -1220,18 +1220,18 @@
 
         describe('spec API', function(){
 
-            it('should contain only get and set keys', function(){
+            it('should contain only modified methods', function(){
                 var spec = nestify({
                     'orders':{constructor:env.Orders}
                 });
                 
-                expect(_.keys(spec)).to.deep.equal(["get","set"]);
+                expect(_.keys(spec)).to.deep.equal(["get","set", "hasChanged"]);
             });
             
             it('should allow nil config', function(){
                 var spec = nestify();
-                
-                expect(_.keys(spec)).to.deep.equal(["get","set"]);
+
+                expect(_.keys(spec)).to.deep.equal(["get","set", "hasChanged"]);
             });
 
             it('can be mixed into individual Model instance', function(){
@@ -1572,7 +1572,7 @@
                          * plus two to account for new 'get' and 'set'
                          * methods on the model.
                          */
-                        expect(_.size(model)).to.equal(propertyCount + 2);
+                        expect(_.size(model)).to.equal(propertyCount + 3);
                         model.set({2112:{name: "foo"}});
                         var nested = model.get("2112");
                         expect(_.size(nested)).to.equal(propertyCount);
@@ -1714,6 +1714,108 @@
             });
         });
 
+        describe('hasChanged function', function(){
+
+            var reset = function(){
+                var ms = Array.prototype.slice.call(arguments);
+                _.each(ms, function(m){
+                    m.changed = {};
+                });
+            };
+
+            it('should work as before by default', function(){
+                var m = new Backbone.Model(),
+                    n = new Backbone.Model();
+                m = nestify.instance(m);
+                m.set({foo: n});
+                m.set("foo|bar", "baz");
+                reset(m, n);
+                expect(n.hasChanged()).to.be.false;
+                expect(m.hasChanged()).to.be.false;
+
+                // test
+                n.set({bar:"buz"});
+                expect(n.hasChanged()).to.be.true;
+                expect(m.hasChanged()).to.be.false;
+                expect(n.hasChanged("bar")).to.be.true;
+                expect(m.hasChanged("foo")).to.be.false;
+            });
+
+            it('should support optional "nested" option', function(){
+                var m = new Backbone.Model(),
+                    n = new Backbone.Model();
+                m = nestify.instance(m);
+                m.set({foo: n});
+                m.set("foo|bar", "baz");
+                reset(m, n);
+                expect(n.hasChanged()).to.be.false;
+                expect(m.hasChanged({nested:true})).to.be.false;
+                expect(m.hasChanged("foo", {nested:true})).to.be.false;
+
+                // test
+                n.set({bar:"buz"});
+                expect(n.hasChanged()).to.be.true;
+                expect(m.hasChanged({nested:true})).to.be.true;
+                expect(n.hasChanged("bar")).to.be.true;
+                expect(m.hasChanged("foo", {nested:true})).to.be.true;
+            });
+
+            it('should support nestify attr syntax with "nested" option', function(){
+                var m = new Backbone.Model(),
+                    n = new Backbone.Model();
+                m = nestify.instance(m);
+                m.set({foo: n});
+                m.set("foo|bar", "baz");
+                reset(m, n);
+                expect(n.hasChanged()).to.be.false;
+                expect(m.hasChanged({nested:true})).to.be.false;
+                expect(m.hasChanged("foo|bar", {nested:true})).to.be.false;
+                expect(m.hasChanged(["foo","bar"], {nested:true})).to.be.false;
+
+                // test
+                n.set({bar:"buz"});
+                expect(n.hasChanged()).to.be.true;
+                expect(m.hasChanged({nested:true})).to.be.true;
+                expect(n.hasChanged("bar")).to.be.true;
+                expect(m.hasChanged("foo|bar", {nested:true})).to.be.true;
+                expect(m.hasChanged(["foo","bar"], {nested:true})).to.be.true;
+            });
+
+            it('should support this corner case', function(){
+                var c = new Backbone.Model({baz:"Baz"}),
+                    b = new Backbone.Model({bar: c}),
+                    a = new Backbone.Model({foo: b});
+                a = nestify.instance(a);
+                reset(a, b, c);
+                c.set({baz: "BAAGHS!"});
+                expect(a.hasChanged("foo|bar")).to.be.false;
+                expect(a.hasChanged("foo|bar|baz")).to.be.true;
+                expect(a.hasChanged("foo|bar", {nested:true})).to.be.true;
+                expect(a.hasChanged("foo|bar|baz", {nested:true})).to.be.true;
+            });
+
+            it('should support nested Collections', function(){
+                var c1 = new Backbone.Model({baz1:"Baz1"}),
+                    c2 = new Backbone.Model({baz:"Baz"}),
+                    cs = new Backbone.Collection([c1, c2]),
+                    b = new Backbone.Model({bars: cs}),
+                    a = new Backbone.Model({foo: b});
+                a = nestify.instance(a);
+                reset(a, b, c1, c2);
+                c2.set({baz: "BAAGHS!"});
+
+                expect(a.hasChanged("foo|bars")).to.be.false;
+                expect(a.hasChanged("foo|bars|1|baz")).to.be.true;
+                expect(a.hasChanged("foo|bars", {nested:true})).to.be.true;
+                expect(a.hasChanged("foo|bars|1|baz", {nested:true})).to.be.true;
+            });
+
+            it('should work for incorrect/nonexistent paths', function(){
+                var a = new Backbone.Model();
+                a = nestify.instance(a);
+                expect(a.hasChanged("foo|bar")).to.be.false;
+            });
+        });
 
         /* just some API doodling */
         var example = function(){
