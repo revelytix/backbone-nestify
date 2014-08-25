@@ -1,4 +1,4 @@
-/* backbone-nestify 0.4.0 2014-04-11
+/* backbone-nestify 0.5.0 2014-08-25
  * http://revelytix.github.io/backbone-nestify/
  * Copyright 2014 Revelytix, Inc. All rights reserved. */
 /**
@@ -60,7 +60,7 @@
          * @param keys array of Strings and or Ints, representing a
          * path to a nested attribute.
          * @param model Backbone.Model to begin the search with
-         * @return undefined if nothing found for that path.
+         * @return model, or undefined if nothing found for that path.
          */
         lookupPath: function(keys, model){
             return _.reduce(keys, function(m, k){
@@ -102,10 +102,23 @@
          * then return an array of Strings, converting any String
          * numbers into proper Integers:
          * <code>['foo', 'bar', 0, 'baz']
+         * @param key (optional) String, Stringified array, or array of Strings
+         * @param opts may contain a <code>delim</code>
+         * @return array of zero or more Strings
          */
         delimitedStringToArray: function(key, opts){
             var _delim = opts.delim;
-            return (_.isString(key) && key.indexOf(_delim) > -1) ? _core.withProperNums(key.split(_delim)) : key;
+
+            if (!_core.existy(key)){
+                return [];
+            } else if (_.isArray(key)){
+                return key;
+            } else if (_.isString(key) && key.indexOf(_delim) > -1) {
+                return _core.withProperNums(key.split(_delim));
+            } else {
+                // it's a single String
+                return [key];
+            }
         },
 
         /**
@@ -140,7 +153,7 @@
                 result = path;
             } else if ((_.isArray(path) || _.isString(path))){
 
-                // wrap single string in array, if necessary
+                // wrap single string in array, if necessary TODO remove and tests
                 path = (_.isArray(path) ? path : [path]);
 
                 /** 
@@ -206,6 +219,38 @@
             }, {}, this);
 
             return setAttributes;
+        },
+
+
+        /**
+         * Utility to do deep (nested) check of 'hasChanged' method.
+         * Looks for nested Models or Collections of Models.
+         * @param hasChangedDeep a reference to this function, for
+         * calling itself recursively
+         * @param checkDeep boolean whether or not to recurse
+         * @param attr (optional) arg to 'hasChanged' method.
+         */
+        hasChangedDeep: function(hasChangedDeep, checkDeep, attr){
+            var didChange = Backbone.Model.prototype.hasChanged.call(this, attr);
+
+            // Do the recursive check, if necessary
+            if (!didChange && checkDeep){
+                didChange = _.reduce(this.attributes, function(didChg, a, idx){
+                    if (!didChg) {
+                        if (a instanceof Backbone.Model){
+                            didChg = hasChangedDeep.call(a, hasChangedDeep, checkDeep);
+                        } else if (a instanceof Backbone.Collection){
+                            didChg = a.reduce(function(didChg, m){
+                                return didChg || hasChangedDeep.call(m, hasChangedDeep, checkDeep);
+                            }, didChg);
+                        }
+                    }
+                    return didChg;
+                }, didChange);
+            }
+
+            return didChange;
+
         }
     };
 
@@ -756,11 +801,11 @@
             get: function(keys, opts){
                 opts = _.extend({}, _moduleOpts, opts);
                 keys = _core.delimitedStringToArray(keys, opts);
-                if (_.isArray(keys)){
+//                if (_.isArray(keys)){
                     return _core.lookupPath(keys, this);
-                } else {
-                    return Backbone.Model.prototype.get.apply(this, arguments);
-                }
+//                } else {
+//                    return Backbone.Model.prototype.get.apply(this, arguments);
+//                }
             },
 
             /**
@@ -797,6 +842,38 @@
                 }
 
                 return Backbone.Model.prototype.set.call(this, attrs, opts);
+            },
+
+            /**
+             * @param attr (optional) can use the nestify array or
+             * stringified array form. If present, this param is
+             * interpreted as an array of one or more strings
+             * describing a path of nesting. The (zero-or-more)
+             * Strings excluding the last one are used to fetch a
+             * nested Model or Collection on which to call
+             * <code>hasChanged</code>, and the remaining String is
+             * passed as the <code>attr</code> arg.
+             * @param opts (optional) can include a
+             * <code>nested</code> boolean arg to indicate whether
+             * this (or nested) Model should be checked recursively
+             * for change.
+             * @return true or false
+             */
+            hasChanged: function(attr, opts){
+
+                if (_.isObject(attr) && !_.isArray(attr)){
+                    opts = _.extend({}, _moduleOpts, attr);
+                    attr = [];
+                } else {
+                    opts = _.extend({}, _moduleOpts, opts);
+                    attr = _core.delimitedStringToArray(attr, opts);
+                }
+
+                var path = _.initial(attr),
+                    // 'path' might be empty in which case 'this' is returned
+                    ctx = _core.lookupPath(path, this);
+
+                return ctx ?_core.hasChangedDeep.call(ctx, _core.hasChangedDeep, (opts.nested === true), _.last(attr)) : false;
             }
         };
     }, {
