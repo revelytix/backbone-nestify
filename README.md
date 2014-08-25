@@ -703,7 +703,7 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
 
 ## Changelog
 
-### 0.x.x
+### 0.6.0
 
 #### ?, 2014
 
