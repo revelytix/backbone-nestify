@@ -498,9 +498,21 @@
              * Default behavior, update nested collection index-based.
              */
             merge: function(coll, atts, opts){
+
+
                 _core.assertArray(atts);
                 var Constructor = coll.model;
                 var alist = _.zip(coll.models, atts);
+                var ms = _.map(alist, function(pair) {
+                    return pair[1] ? new Constructor(pair[1], opts): pair[0];
+                });
+//console.log(ms);
+                coll.set(_.filter(ms, _core.existy), opts);
+                /* Note that this may fill the models
+                 * array sparsely, perhaps unexpectedly. */
+//                coll.models = ms;
+
+/*
                 _.each(alist, function(pair, i){
 
                     var m = _.first(pair);
@@ -509,8 +521,6 @@
                     if (att){
                         if (!m){
                             m = new Constructor(att, opts);
-                            /* Note that this may fill the models
-                             * array sparsely, perhaps unexpectedly. */
                             coll.models[i] = m;
                             coll.length = coll.models.length;
                         } else {
@@ -518,7 +528,7 @@
                         }
                     }
                 });
-
+*/
                 return coll;
             }
         }
