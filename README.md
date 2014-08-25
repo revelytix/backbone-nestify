@@ -3,8 +3,8 @@
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting Backbone [Models](http://backbonejs.org/#Model) and [Collections](http://backbonejs.org/#Collection). It depends only on Backbone and [Underscore](http://underscorejs.org/). 
 
 ## Download
-* [0.4.0 release](dist/backbone-nestify-0.4.0.min.js?raw=true) - minified, 7kb
-* [0.4.0 release](dist/backbone-nestify-0.4.0.js?raw=true) - 30 kb
+* [0.5.0 release](dist/backbone-nestify-0.5.0.min.js?raw=true) - minified, 7kb
+* [0.5.0 release](dist/backbone-nestify-0.5.0.js?raw=true) - 34 kb
 
 ## Features
 
@@ -183,6 +183,20 @@ Backbone Model's [unset](http://backbonejs.org/#Model-unset) and [clear](http://
 
 ```javascript
 shoppingCart.unset("orders|0|items|2|backOrdered");
+```
+
+### hasChanged
+
+Backbone Model's [hasChanged](http://backbonejs.org/#Model-hasChanged) method can optionally be made to do a recursive check for nested changed Models via the `{nested:true}` option.
+
+```javascript
+shoppingCart.hasChanged({nested: true});
+```
+
+The `attr` param is still supported; in that case the options hash can be bumped to the second parameter:
+
+```javascript
+shoppingCart.hasChanged("orders", {nested: true});
 ```
 
 ## Nestify Spec
@@ -662,14 +676,14 @@ nestify([{
 
 ## Under the Hood
 
-The plugin works by replacing the [get](http://backbonejs.org/#Model-get) and [set](http://backbonejs.org/#Model-set) methods of the Model (or Collection) definitions. The replacement methods delegate to the original methods to provide the usual Backbone functionality, and they add the additional functionality provided by this plugin. The mixin is just an ordinary object containing these two methods.
+The plugin works by replacing the [get](http://backbonejs.org/#Model-get), [set](http://backbonejs.org/#Model-set) and [hasChanged](http://backbonejs.org/#Model-hasChanged) methods of the Model (or Collection) definitions. The replacement methods delegate to the original methods to provide the usual Backbone functionality, and they add the additional functionality provided by this plugin. The mixin is just an ordinary object containing these two methods.
 
 ```javascript
 var mixin = nestify({
    ...
 });
 
-_.keys(mixin); // ["get","set"]
+_.keys(mixin); // ["get","set","hasChanged"]
 ```
 
 ## Why?
@@ -688,6 +702,14 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
     $ grunt [dist]
 
 ## Changelog
+
+### 0.5.0
+
+#### Aug 25, 2014
+
+* Enhancement (issue #8) - Model `hasChanged` method now optionally
+  does a recursive check for nested changed Models. Use {nested:true}
+  param.
 
 ### 0.4.0 
 
