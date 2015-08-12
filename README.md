@@ -701,6 +701,21 @@ Having said all of that, we believe Nestify fills a couple of really sweet spots
     $ npm install
     $ grunt [dist]
 
+You may first need|want to
+
+* add Ubuntu Node PPA https://launchpad.net/~chris-lea/+archive/ubuntu/node.js
+
+        sudo apt-add-repository ppa:chris-lea/node.js
+
+* install node
+
+        sudo apt-get install nodejs
+
+* install grunt CLI
+
+        sudo npm install -g grunt-cli
+
+
 ## Changelog
 
 ### 0.6.0
