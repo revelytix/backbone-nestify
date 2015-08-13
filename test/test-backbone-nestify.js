@@ -411,6 +411,19 @@
                 expect(order0.get("spicy")).to.equal("meatball");
                 expect(order1.get("spicy")).to.equal("canoli");
             });
+
+            // issue #10
+            it("should allow null collection", function(){
+                var acct = new env.Account();
+                // var orders = new env.Orders();
+                // var order = new env.Order();
+                // acct.set("orders", orders);
+                // orders.add(order);
+                acct.set({orders: null});
+                expect(acct.get("orders").length).to.equal(0);
+            });
+
+
         });
 
         describe('fine-grained control of nested collection modification by using custom options', function(){
