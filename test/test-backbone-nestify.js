@@ -1783,6 +1783,14 @@
                     it('will safely handle attempting to nestify-instance a non-Model', function(){
                         nestify.instance("not a model", nestify({items: env.Items}));
                     });
+
+                    it('will nestify with an empty spec by default', function(){
+                        var m = new Backbone.Model({foo: new Backbone.Model()}),
+                            n = m.get("foo");
+                        m = nestify.instance(m);
+                        m.set("foo|bar", "baz");
+                        expect(n.get("bar")).to.equal("baz");
+                    });
                 });
             });
         });
