@@ -1,6 +1,6 @@
-/* backbone-nestify 0.5.0 2014-08-25
+/* backbone-nestify 0.6.0 2015-08-14
  * http://revelytix.github.io/backbone-nestify/
- * Copyright 2014 Revelytix, Inc. All rights reserved. */
+ * Copyright 2015 Teradata, Inc. All rights reserved. */
 /**
  * A mixin for models with nested models; overrides 'get' and 'set'
  * methods, deals properly with getting/setting raw attributes 
@@ -175,6 +175,14 @@
                 }, value);
             }
             return result;
+        },
+
+        /** coerce null or undefined to an empty array */
+        coerceArray: function(a){
+            if (!_core.existy(a)){
+                a = [];
+            }
+            return a;
         },
 
         assertArray: function(a){
@@ -470,6 +478,7 @@
              * Collection 'reset' method.
              */
             reset: function(coll, atts, opts){
+                atts = _core.coerceArray(atts);
                 _core.assertArray(atts);
                 var Constructor = coll.model;
                 coll.reset(_.map(atts, function(att){
@@ -489,6 +498,7 @@
              * or Model 'set' method
              */
             smartMerge: function(coll, atts, opts){
+                atts = _core.coerceArray(atts);
                 _core.assertArray(atts);
                 var Constructor = coll.model;
                 coll.set(_.map(atts, function(att){
@@ -501,27 +511,25 @@
              * Default behavior, update nested collection index-based.
              */
             merge: function(coll, atts, opts){
+                atts = _core.coerceArray(atts);
                 _core.assertArray(atts);
                 var Constructor = coll.model;
                 var alist = _.zip(coll.models, atts);
-                _.each(alist, function(pair, i){
+                var ms = _.map(alist, function(pair) {
+                    var existingModel = pair[0],
+                        updateAtts = pair[1],
+                        result = existingModel;
 
-                    var m = _.first(pair);
-                    var att = _.last(pair);
-
-                    if (att){
-                        if (!m){
-                            m = new Constructor(att, opts);
-                            /* Note that this may fill the models
-                             * array sparsely, perhaps unexpectedly. */
-                            coll.models[i] = m;
-                            coll.length = coll.models.length;
+                    if (updateAtts){
+                        if (existingModel){
+                            existingModel.set(updateAtts, opts);
                         } else {
-                            m.set(att, opts);
+                            result = new Constructor(updateAtts, opts);
                         }
                     }
+                    return result;
                 });
-
+                coll.set(ms, opts);
                 return coll;
             }
         }
@@ -885,7 +893,7 @@
          * @param opts the usual
          * @return a mixin (as if calling nestify() per usual)
          */
-        auto:function(opts){
+        auto: function(opts){
             opts = opts || {};
 
             // private, anonymous subtypes
@@ -920,13 +928,13 @@
          * internal attributes according to the supplied spec.
          * @param modelInstance an existing instance of Backbone.Model
          * (or subclass)
-         * @param spec the usual
-         * @param opts the usual
+         * @param mixin produced by nestify(...)
+         * @param opts (optional) opts to Backbone
          * @return the modelInstance param
          */
-        instance: function(modelInstance, spec, opts){
+        instance: function(modelInstance, mixin, opts){
             if (modelInstance instanceof Backbone.Model) {
-                _.extend(modelInstance, mixinFn(spec, opts));
+                _.extend(modelInstance, mixin || mixinFn(opts));
                 var atts = modelInstance.attributes;
                 modelInstance.attributes = {}; //TODO why is this necessary?
                 modelInstance.set(atts, opts);

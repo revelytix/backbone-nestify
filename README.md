@@ -6,8 +6,8 @@ Backbone [Models](http://backbonejs.org/#Model) and
 and [Underscore](http://underscorejs.org/).
 
 ## Download
-* [0.5.0 release](dist/backbone-nestify-0.5.0.min.js?raw=true) - minified, 7kb
-* [0.5.0 release](dist/backbone-nestify-0.5.0.js?raw=true) - 34 kb
+* [0.6.0 release](dist/backbone-nestify-0.6.0.min.js?raw=true) - minified, 8kb
+* [0.6.0 release](dist/backbone-nestify-0.6.0.js?raw=true) - 34 kb
 
 ## Features
 
