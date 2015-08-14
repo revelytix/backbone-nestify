@@ -415,10 +415,6 @@
             // issue #10
             it("should allow null collection", function(){
                 var acct = new env.Account();
-                // var orders = new env.Orders();
-                // var order = new env.Order();
-                // acct.set("orders", orders);
-                // orders.add(order);
                 acct.set({orders: null});
                 expect(acct.get("orders").length).to.equal(0);
             });

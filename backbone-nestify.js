@@ -174,6 +174,14 @@
             return result;
         },
 
+        /** coerce null or undefined to an empty array */
+        coerceArray: function(a){
+            if (!_core.existy(a)){
+                a = [];
+            }
+            return a;
+        },
+
         assertArray: function(a){
             // TODO proper assert
             if (!(_.isArray(a))){
@@ -467,6 +475,7 @@
              * Collection 'reset' method.
              */
             reset: function(coll, atts, opts){
+                atts = _core.coerceArray(atts);
                 _core.assertArray(atts);
                 var Constructor = coll.model;
                 coll.reset(_.map(atts, function(att){
@@ -486,6 +495,7 @@
              * or Model 'set' method
              */
             smartMerge: function(coll, atts, opts){
+                atts = _core.coerceArray(atts);
                 _core.assertArray(atts);
                 var Constructor = coll.model;
                 coll.set(_.map(atts, function(att){
@@ -498,7 +508,7 @@
              * Default behavior, update nested collection index-based.
              */
             merge: function(coll, atts, opts){
-
+                atts = _core.coerceArray(atts);
                 _core.assertArray(atts);
                 var Constructor = coll.model;
                 var alist = _.zip(coll.models, atts);
