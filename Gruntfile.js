@@ -58,6 +58,10 @@ module.exports = function(grunt) {
         },
 
         "mochaTestWith": {
+            backbone1_2_1: {
+                underscore: 'test/vendor/underscore-1.8.3.min.js',
+                backbone: 'test/vendor/backbone-1.2.1.min.js'
+            },
             backbone1_1_2: {
                 underscore: 'test/vendor/underscore-1.6.0.min.js',
                 backbone: 'test/vendor/backbone-1.1.2.min.js'
