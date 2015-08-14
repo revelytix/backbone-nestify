@@ -1,6 +1,12 @@
 # Release checklist (note to self)
 
 * check status of GitHub issue(s) and/or milestone(s)
+* _TODO_ investigate adding to `package.json`:
+  * readme
+  * license
+  * change the `main` to the minified file; add a dev file
+  * do a test beta publish, if necessary
+  * see https://docs.npmjs.com/files/package.json
 * (optional) update copyright year (`LICENSE`, `package.json`)
 * update `README` changelog
 * (optional) backup `node_module`; fresh install with `npm install`
@@ -54,7 +60,20 @@ git commit -m "gh-pages 0.x.0"
 * publish to npmjs.org
 
 ```
+npm publish .
+```
+or
+```
 npm publish . --tag 0.x.0
+npm tag backbone-nestify@0.x.0 latest
+```
+or
+```
+npm publish . --tag 0.x.0-beta
+```
+then later
+```
+npm tag backbone-nestify@0.x.0 latest
 ```
 
 # Post-release checklist 
