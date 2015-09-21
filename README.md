@@ -859,6 +859,12 @@ You may first need|want to
 
         sudo npm install -g grunt-cli
 
+* run tests via `mocha` (Note: uses underscore and backbone versions specified
+  in `package.json`, whereas `grunt` uses underscore and backbone versions specified in `Gruntfile.js`)
+
+        ./node_modules/mocha/bin/mocha
+        ./node_modules/mocha/bin/mocha -g "<test-matching pattern>"
+
 
 ## Changelog
 
