@@ -1900,6 +1900,23 @@
                 expect(a.hasChanged("foo|bars|1|baz", {nested:true})).to.be.true;
             });
 
+            it('should support nested Collections 2', function(){
+                var c1 = new Backbone.Model({baz1:"Baz1"}),
+                    c2 = new Backbone.Model({baz:"Baz"}),
+                    cs = new Backbone.Collection([c1, c2]),
+                    b = new Backbone.Model({bars: cs}),
+                    a = new Backbone.Model({foo: b});
+                a = nestify.instance(a);
+                reset(a, b, c1, c2);
+                a.set("foo|bars|1|baz", "BAAGHS!", {update: "smart"});
+
+                expect(a.get("foo|bars|1|baz")).to.equal("BAAGHS!");
+                expect(a.hasChanged("foo|bars")).to.be.false;
+                expect(a.hasChanged("foo|bars|1|baz")).to.be.true;
+                expect(a.hasChanged("foo|bars", {nested:true})).to.be.true;
+                expect(a.hasChanged("foo|bars|1|baz", {nested:true})).to.be.true;
+            });
+
             it('should work for incorrect/nonexistent paths', function(){
                 var a = new Backbone.Model();
                 a = nestify.instance(a);
