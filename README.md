@@ -1,3 +1,5 @@
+_This project is no longer under active development._
+
 # backbone-nestify
 
 Backbone Nestify is a [Backbone.js](http://backbonejs.org) plugin for nesting
